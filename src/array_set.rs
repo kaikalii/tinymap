@@ -303,38 +303,6 @@ where
             false
         }
     }
-    /**
-    Removes all values from the set that do not satisfy the predicate
-
-    # Example
-
-    ```
-    use tinymap::ArraySet;
-
-    let mut set = ArraySet::<[char; 10]>::new();
-    set.insert('a');
-    set.insert('b');
-    set.insert('?');
-    assert_eq!(3, set.len());
-    set.retain(|val| val.is_alphabetic());
-    assert_eq!(2, set.len());
-    assert_eq!(false, set.contains(&'?'));
-    ```
-    */
-    pub fn retain<F>(&mut self, mut predicate: F)
-    where
-        F: FnMut(&A::Item) -> bool,
-    {
-        for i in (0..self.len).rev() {
-            let slice = self.array.as_mut_slice();
-            if !predicate(&slice[i]) {
-                for j in (i + 1)..self.len {
-                    slice.swap(j - 1, j);
-                }
-                self.len -= 1;
-            }
-        }
-    }
 }
 
 impl<A> fmt::Debug for ArraySet<A>

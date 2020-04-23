@@ -446,39 +446,6 @@ where
             None
         }
     }
-    /**
-    Removes all entries from the map that do not satisfy the predicate
-
-    # Example
-
-    ```
-    use tinymap::ArrayMap;
-
-    let mut map = ArrayMap::<[(i32, char); 10]>::new();
-    map.insert(1, 'a');
-    map.insert(2, 'b');
-    map.insert(3, '?');
-    assert_eq!(3, map.len());
-    map.retain(|_, val| val.is_alphabetic());
-    assert_eq!(2, map.len());
-    assert_eq!(None, map.get(&3));
-    ```
-    */
-    pub fn retain<F>(&mut self, mut predicate: F)
-    where
-        F: FnMut(&K, &mut V) -> bool,
-    {
-        for i in (0..self.len).rev() {
-            let slice = self.array.as_mut_slice();
-            let (k, v) = slice[i].as_mut_pair();
-            if !predicate(k, v) {
-                for j in (i + 1)..self.len {
-                    slice.swap(j - 1, j);
-                }
-                self.len -= 1;
-            }
-        }
-    }
 }
 
 impl<A, K, V, Q> Index<&Q> for ArrayMap<A>

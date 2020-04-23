@@ -4,13 +4,7 @@
 /*!
 # Description
 
-# Efficiency
 
-In general...
-
-- Insertion and removal operations run in O(n) time
-- Find operations run in O(logn) time
-- Retain operations run in O(n^2) time
 */
 
 pub mod array_map;
