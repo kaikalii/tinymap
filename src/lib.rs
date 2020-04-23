@@ -1,4 +1,5 @@
 #![warn(missing_docs, rust_2018_idioms)]
+#![cfg_attr(not(feature = "alloc"), no_std)]
 
 /*!
 # Description
@@ -14,9 +15,13 @@ In general...
 
 pub mod array_map;
 pub mod array_set;
+#[cfg(feature = "alloc")]
+pub mod tiny_map;
 
 pub use array_map::ArrayMap;
 pub use array_set::ArraySet;
+#[cfg(feature = "alloc")]
+pub use tiny_map::TinyMap;
 
 /**
 Create a new ArrayMap with the specified parameters
@@ -65,6 +70,32 @@ map.insert(1);
 macro_rules! arrayset {
     ($v:ty; $n:expr) => {
         tinymap::ArraySet::<[$v; $n]>::new()
+    };
+}
+
+/**
+Create a new ArrayMap with the specified parameters
+
+# Expansion
+
+```ignore
+tinymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::TinyMap::<[(KEY_TYPE, VALUE_TYPE); CAPACITY]>::new()
+```
+
+# Example
+
+```
+use tinymap::tinymap;
+
+let mut map = tinymap!(i32 => &str; 10);
+map.insert(1, "a");
+```
+*/
+#[cfg(feature = "alloc")]
+#[macro_export]
+macro_rules! tinymap {
+    ($k:ty => $v:ty; $n:expr) => {
+        tinymap::TinyMap::<[($k, $v); $n]>::new()
     };
 }
 
@@ -121,6 +152,9 @@ pub trait Array {
     fn as_slice(&self) -> &[Self::Item];
     /// Get a mutable slice into the array
     fn as_mut_slice(&mut self) -> &mut [Self::Item];
+    /// Turn the array into a boxed slice
+    #[cfg(feature = "alloc")]
+    fn into_boxed_slice(self) -> Box<[Self::Item]>;
 }
 
 macro_rules! impl_array {
@@ -134,6 +168,10 @@ macro_rules! impl_array {
                 }
                 fn as_mut_slice(&mut self) -> &mut [Self::Item] {
                     self
+                }
+                #[cfg(feature = "alloc")]
+                fn into_boxed_slice(self) -> Box<[Self::Item]> {
+                    Box::new(self)
                 }
             }
         )*

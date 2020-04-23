@@ -516,10 +516,27 @@ where
     K: Ord,
 {
     fn from(mut array: A) -> Self {
-        array.as_mut_slice().sort_by(|a, b| a.key().cmp(b.key()));
+        array
+            .as_mut_slice()
+            .sort_unstable_by(|a, b| a.key().cmp(b.key()));
         ArrayMap {
             array,
             len: A::CAPACITY,
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<A, K, V> IntoIterator for ArrayMap<A>
+where
+    A: Array,
+    A::Item: MapEntry<Key = K, Value = V>,
+{
+    type Item = A::Item;
+    type IntoIter = IntoIter<A>;
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            iter: self.array.into_boxed_slice().into_vec().into_iter(),
         }
     }
 }
@@ -540,6 +557,26 @@ where
             map.insert(key, value);
         }
         map
+    }
+}
+
+/// An consuming iterator over the key-value pairs in an ArrayMap
+#[cfg(feature = "alloc")]
+pub struct IntoIter<A>
+where
+    A: Array,
+{
+    iter: std::vec::IntoIter<A::Item>,
+}
+
+#[cfg(feature = "alloc")]
+impl<A> Iterator for IntoIter<A>
+where
+    A: Array,
+{
+    type Item = A::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
     }
 }
 

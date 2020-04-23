@@ -357,10 +357,24 @@ where
     T: Ord,
 {
     fn from(mut array: A) -> Self {
-        array.as_mut_slice().sort();
+        array.as_mut_slice().sort_unstable();
         ArraySet {
             array,
             len: A::CAPACITY,
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<A> IntoIterator for ArraySet<A>
+where
+    A: Array,
+{
+    type Item = A::Item;
+    type IntoIter = IntoIter<A>;
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            iter: self.array.into_boxed_slice().into_vec().into_iter(),
         }
     }
 }
@@ -380,6 +394,26 @@ where
             set.insert(value);
         }
         set
+    }
+}
+
+/// An consuming iterator over the values in an ArrayMap
+#[cfg(feature = "alloc")]
+pub struct IntoIter<A>
+where
+    A: Array,
+{
+    iter: std::vec::IntoIter<A::Item>,
+}
+
+#[cfg(feature = "alloc")]
+impl<A> Iterator for IntoIter<A>
+where
+    A: Array,
+{
+    type Item = A::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
     }
 }
 
