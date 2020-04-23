@@ -1,6 +1,6 @@
 //! An array-backed, map-like data structure.
 
-use std::{borrow::Borrow, mem::swap, ops::Index};
+use std::{borrow::Borrow, fmt, mem::swap, ops::Index};
 
 use crate::{Array, MapEntry};
 
@@ -41,6 +41,22 @@ where
     */
     pub fn new() -> Self {
         Self::default()
+    }
+    /**
+    Clears the map, removing all elements
+
+    # Example
+    ```
+    use tinymap::ArrayMap;
+
+    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    a.insert(1, "a");
+    a.clear();
+    assert!(a.is_empty());
+    ```
+    */
+    pub fn clear(&mut self) {
+        *self = Self::new();
     }
 }
 
@@ -407,7 +423,7 @@ where
     # Example
 
     ```
-     use tinymap::ArrayMap;
+    use tinymap::ArrayMap;
 
     let mut map = ArrayMap::<[(i32, &str); 10]>::new();
     map.insert(1, "a");
@@ -434,6 +450,38 @@ where
             None
         }
     }
+    /**
+    Removes all entries from the map that do not satisfy the predicate
+
+    # Example
+
+    ```
+    use tinymap::ArrayMap;
+
+    let mut map = ArrayMap::<[(i32, char); 10]>::new();
+    map.insert(1, 'a');
+    map.insert(2, 'b');
+    map.insert(3, '?');
+    assert_eq!(3, map.len());
+    map.retain(|_, val| val.is_alphabetic());
+    assert_eq!(2, map.len());
+    ```
+    */
+    pub fn retain<F>(&mut self, mut predicate: F)
+    where
+        F: FnMut(&K, &mut V) -> bool,
+    {
+        for i in (0..self.len).rev() {
+            let slice = self.array.as_mut_slice();
+            let (k, v) = slice[i].as_mut_pair();
+            if !predicate(k, v) {
+                for j in (i + 1)..self.len {
+                    slice.swap(j - 1, j);
+                }
+                self.len -= 1;
+            }
+        }
+    }
 }
 
 impl<A, K, V, Q> Index<&Q> for ArrayMap<A>
@@ -447,6 +495,20 @@ where
     fn index(&self, key: &Q) -> &Self::Output {
         self.get(key)
             .unwrap_or_else(|| panic!("No entry found for key"))
+    }
+}
+
+impl<A, K, V> fmt::Debug for ArrayMap<A>
+where
+    A: Array,
+    A::Item: MapEntry<Key = K, Value = V>,
+    K: fmt::Debug,
+    V: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_map()
+            .entries(self.iter().map(|entry| (entry.key(), entry.value())))
+            .finish()
     }
 }
 
