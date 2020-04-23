@@ -8,6 +8,31 @@ pub mod array_map;
 
 pub use array_map::ArrayMap;
 
+/**
+Create a new ArrayMap with the specified parameters
+
+# Expansion
+
+```ignore
+arraymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::ArrayMap::<[(KEY_TYPE, VALUE_TYPE); CAPACITY]>::new()
+```
+
+# Example
+
+```
+use tinymap::arraymap;
+
+let mut map = arraymap!(i32 => &str; 10);
+map.insert(1, "a");
+```
+*/
+#[macro_export]
+macro_rules! arraymap {
+    ($k:ty => $v:ty; $n:expr) => {
+        tinymap::ArrayMap::<[($k, $v); $n]>::new()
+    };
+}
+
 /// Behavior for an entry in a map
 pub trait MapEntry {
     /// The key type
