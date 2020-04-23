@@ -1,6 +1,6 @@
 //! An array-backed, map-like data structure.
 
-use std::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
+use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
 
 use crate::{Array, MapEntry};
 
@@ -537,7 +537,7 @@ pub struct Iter<'a, A>
 where
     A: Array,
 {
-    iter: std::slice::Iter<'a, A::Item>,
+    iter: core::slice::Iter<'a, A::Item>,
 }
 
 impl<'a, A> Iterator for Iter<'a, A>
@@ -555,7 +555,7 @@ pub struct IterMut<'a, A>
 where
     A: Array,
 {
-    iter: std::slice::IterMut<'a, A::Item>,
+    iter: core::slice::IterMut<'a, A::Item>,
 }
 
 impl<'a, A, K, V> Iterator for IterMut<'a, A>
@@ -579,7 +579,7 @@ pub struct Keys<'a, A>
 where
     A: Array,
 {
-    iter: std::slice::Iter<'a, A::Item>,
+    iter: core::slice::Iter<'a, A::Item>,
 }
 
 impl<'a, A, K> Iterator for Keys<'a, A>
@@ -599,7 +599,7 @@ pub struct Values<'a, A>
 where
     A: Array,
 {
-    iter: std::slice::Iter<'a, A::Item>,
+    iter: core::slice::Iter<'a, A::Item>,
 }
 
 impl<'a, A, V> Iterator for Values<'a, A>
@@ -619,7 +619,7 @@ pub struct ValuesMut<'a, A>
 where
     A: Array,
 {
-    iter: std::slice::IterMut<'a, A::Item>,
+    iter: core::slice::IterMut<'a, A::Item>,
 }
 
 impl<'a, A, V> Iterator for ValuesMut<'a, A>
