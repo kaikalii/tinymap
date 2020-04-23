@@ -4,7 +4,19 @@
 /*!
 # Description
 
+This crate provides array-based set and map data structures. These structures
+have a fixed capacity but keep track of how many elements the user has inserted
+and removed.
 
+[`ArrayMap`](struct.ArrayMap.html) is an array-backed map
+[`ArraySet`](struct.ArraySet.html) is an array-backed set
+
+If the `alloc` feature is enabled (which it is by default), this crate also
+provides variants of these stack-based structures that automatically move to the
+heap if the grow beyond their array's capacity.
+
+[`TinyMap`](struct.TinyMap.html) is an auto-allocating map
+[`TinySet`](struct.TinySet.html) is an auto-allocating set
 */
 
 pub mod array_map;
