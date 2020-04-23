@@ -11,10 +11,6 @@ ArrayMap wraps an array of key-value pairs and supports operation similar to a B
 It has a fixed capacity, but it keeps track of how many pairs have been inserted and removed.
 
 Because this crate uses no unsafe code, key and value types must both implement Default.
-
-# Efficiency
-
-In general...
 */
 #[derive(Clone, Copy, Default)]
 pub struct ArrayMap<A> {
@@ -510,6 +506,21 @@ where
         f.debug_map()
             .entries(self.iter().map(|entry| (entry.key(), entry.value())))
             .finish()
+    }
+}
+
+impl<A, K, V> From<A> for ArrayMap<A>
+where
+    A: Array,
+    A::Item: MapEntry<Key = K, Value = V>,
+    K: Ord,
+{
+    fn from(mut array: A) -> Self {
+        array.as_mut_slice().sort_by(|a, b| a.key().cmp(b.key()));
+        ArrayMap {
+            array,
+            len: A::CAPACITY,
+        }
     }
 }
 

@@ -1,13 +1,22 @@
 #![warn(missing_docs, rust_2018_idioms)]
-#![no_std]
 
 /*!
+# Description
 
+# Efficiency
+
+In general...
+
+- Insertion and removal operations run in O(n) time
+- Find operations run in O(logn) time
+- Retain operations run in O(n^2) time
 */
 
 pub mod array_map;
+pub mod array_set;
 
 pub use array_map::ArrayMap;
+pub use array_set::ArraySet;
 
 /**
 Create a new ArrayMap with the specified parameters
@@ -31,6 +40,31 @@ map.insert(1, "a");
 macro_rules! arraymap {
     ($k:ty => $v:ty; $n:expr) => {
         tinymap::ArrayMap::<[($k, $v); $n]>::new()
+    };
+}
+
+/**
+Create a new ArraySet with the specified parameters
+
+# Expansion
+
+```ignore
+arrayset!( VALUE_TYPE; CAPACITY ) -> tinymap::ArraySet::<[VALUE_TYPE; CAPACITY]>::new()
+```
+
+# Example
+
+```
+use tinymap::arrayset;
+
+let mut map = arrayset!(i32; 10);
+map.insert(1);
+```
+*/
+#[macro_export]
+macro_rules! arrayset {
+    ($v:ty; $n:expr) => {
+        tinymap::ArraySet::<[$v; $n]>::new()
     };
 }
 
@@ -77,7 +111,7 @@ impl<K, V> MapEntry for (K, V) {
     }
 }
 
-/// Dehavior for an array
+/// Behavior for an array
 pub trait Array {
     /// The Item type
     type Item;
