@@ -39,7 +39,7 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut set = TinySet::<[i32; 10]>::new();
+    let mut set = TinySet::<[i32; 2]>::new();
     ```
     */
     pub fn new() -> Self {
@@ -52,7 +52,7 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut v = TinySet::<[i32; 10]>::new();
+    let mut v = TinySet::<[i32; 2]>::new();
     v.insert(1);
     v.clear();
     assert!(v.is_empty());
@@ -75,7 +75,7 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut v = TinySet::<[i32; 10]>::new();
+    let mut v = TinySet::<[i32; 2]>::new();
     assert_eq!(v.len(), 0);
     v.insert(1);
     assert_eq!(v.len(), 1);
@@ -95,7 +95,7 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut v = TinySet::<[i32; 10]>::new();
+    let mut v = TinySet::<[i32; 2]>::new();
     assert!(v.is_empty());
     v.insert(1);
     assert!(!v.is_empty());
@@ -118,8 +118,8 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut a = TinySet::<[i32; 10]>::new();
-    assert_eq!(10, a.capacity());
+    let mut a = TinySet::<[i32; 2]>::new();
+    assert_eq!(2, a.capacity());
     ```
     */
     pub fn capacity(&self) -> usize {
@@ -170,7 +170,7 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut set = TinySet::<[i32; 10]>::new();
+    let mut set = TinySet::<[i32; 2]>::new();
 
     assert_eq!(set.insert(2), true);
     assert_eq!(set.insert(2), false);
@@ -264,7 +264,7 @@ where
     ```
     use tinymap::TinySet;
 
-    let mut set = TinySet::<[i32; 10]>::new();
+    let mut set = TinySet::<[i32; 2]>::new();
 
     set.insert(2);
     assert_eq!(set.remove(&2), true);

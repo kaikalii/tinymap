@@ -31,7 +31,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
 
     // entries can now be inserted into the empty map
     map.insert(1, "a");
@@ -47,7 +47,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, &str); 10]>::new();
+    let mut a = TinyMap::<[(i32, &str); 2]>::new();
     a.insert(1, "a");
     a.clear();
     assert!(a.is_empty());
@@ -81,7 +81,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, &str); 10]>::new();
+    let mut a = TinyMap::<[(i32, &str); 2]>::new();
     assert_eq!(a.len(), 0);
     a.insert(1, "a");
     assert_eq!(a.len(), 1);
@@ -101,7 +101,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, &str); 10]>::new();
+    let mut a = TinyMap::<[(i32, &str); 2]>::new();
     assert!(a.is_empty());
     a.insert(1, "a");
     assert!(!a.is_empty());
@@ -125,8 +125,8 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, &str); 10]>::new();
-    assert_eq!(10, a.capacity());
+    let mut a = TinyMap::<[(i32, &str); 2]>::new();
+    assert_eq!(2, a.capacity());
     ```
     */
     pub fn capacity(&self) -> usize {
@@ -140,7 +140,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
     map.insert(3, "c");
     map.insert(2, "b");
     map.insert(1, "a");
@@ -183,7 +183,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
     assert_eq!(map.insert(37, "a"), None);
     assert_eq!(map.is_empty(), false);
 
@@ -227,7 +227,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
     map.insert(1, "a");
     assert_eq!(map.get(&1), Some(&"a"));
     assert_eq!(map.get(&2), None);
@@ -259,7 +259,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
     map.insert(1, "a");
     assert_eq!(map.contains_key(&1), true);
     assert_eq!(map.contains_key(&2), false);
@@ -283,7 +283,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
     map.insert(1, "a");
     if let Some(x) = map.get_mut(&1) {
         *x = "b";
@@ -309,7 +309,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(&str, i32); 10]>::new();
+    let mut map = TinyMap::<[(&str, i32); 2]>::new();
     map.insert("a", 1);
     map.insert("b", 2);
     map.insert("c", 3);
@@ -336,7 +336,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, &str); 10]>::new();
+    let mut a = TinyMap::<[(i32, &str); 2]>::new();
     a.insert(2, "b");
     a.insert(1, "a");
 
@@ -358,7 +358,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, &str); 10]>::new();
+    let mut a = TinyMap::<[(i32, &str); 2]>::new();
     a.insert(1, "hello");
     a.insert(2, "goodbye");
 
@@ -380,7 +380,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut a = TinyMap::<[(i32, String); 10]>::new();
+    let mut a = TinyMap::<[(i32, String); 2]>::new();
     a.insert(1, String::from("hello"));
     a.insert(2, String::from("goodbye"));
 
@@ -416,7 +416,7 @@ where
     ```
     use tinymap::TinyMap;
 
-    let mut map = TinyMap::<[(i32, &str); 10]>::new();
+    let mut map = TinyMap::<[(i32, &str); 2]>::new();
     map.insert(1, "a");
     assert_eq!(map.remove(&1), Some("a"));
     assert_eq!(map.remove(&1), None);
