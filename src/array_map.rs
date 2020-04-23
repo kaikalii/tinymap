@@ -100,6 +100,32 @@ where
     pub fn capacity(&self) -> usize {
         A::CAPACITY
     }
+    /**
+    Gets an iterator over the entries of the map, sorted by key
+
+    # Example
+
+    ```
+    use tinymap::ArrayMap;
+
+    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    map.insert(3, "c");
+    map.insert(2, "b");
+    map.insert(1, "a");
+
+    for (key, value) in map.iter() {
+        println!("{}: {}", key, value);
+    }
+
+    let (first_key, first_value) = map.iter().next().unwrap();
+    assert_eq!((*first_key, *first_value), (1, "a"));
+    ```
+    */
+    pub fn iter(&self) -> Iter<'_, A> {
+        Iter {
+            iter: self.array.as_slice()[..self.len].iter(),
+        }
+    }
 }
 
 impl<A, K, V> ArrayMap<A>
@@ -174,7 +200,7 @@ where
             }
             Err(i) => {
                 let slice = self.array.as_mut_slice();
-                for j in ((i + 1)..self.len).rev() {
+                for j in ((i + 1)..=self.len).rev() {
                     slice.swap(j - 1, j);
                 }
                 let mut entry = A::Item::new(key, value);
@@ -196,7 +222,7 @@ where
         K: Borrow<Q>,
         Q: Ord,
     {
-        self.array.as_slice()[0..self.len]
+        self.array.as_slice()[..self.len]
             .binary_search_by_key(&key.borrow(), |entry| entry.key().borrow())
     }
     /**
@@ -272,6 +298,100 @@ where
             None
         }
     }
+    /**
+    Gets a mutable iterator over the entries of the map, sorted by key
+
+    # Example
+
+    ```
+    use tinymap::ArrayMap;
+
+    let mut map = ArrayMap::<[(&str, i32); 10]>::new();
+    map.insert("a", 1);
+    map.insert("b", 2);
+    map.insert("c", 3);
+
+    // add 10 to the value if the key isn't "a"
+    for (key, value) in map.iter_mut() {
+        if key != &"a" {
+            *value += 10;
+        }
+    }
+    ```
+    */
+    pub fn iter_mut(&mut self) -> IterMut<'_, A> {
+        IterMut {
+            iter: self.array.as_mut_slice()[..self.len].iter_mut(),
+        }
+    }
+    /**
+    Gets an iterator over the keys of the map, sorted
+
+    # Example
+
+    ```
+    use tinymap::ArrayMap;
+
+    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    a.insert(2, "b");
+    a.insert(1, "a");
+
+    let keys: Vec<_> = a.keys().cloned().collect();
+    assert_eq!(keys, [1, 2]);
+    ```
+    */
+    pub fn keys(&self) -> Keys<'_, A> {
+        Keys {
+            iter: self.array.as_slice()[..self.len].iter(),
+        }
+    }
+    /**
+    Gets an iterator over the values of the map, sorted
+
+    # Example
+
+    ```
+    use tinymap::ArrayMap;
+
+    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    a.insert(1, "hello");
+    a.insert(2, "goodbye");
+
+    let values: Vec<&str> = a.values().cloned().collect();
+    assert_eq!(values, ["hello", "goodbye"]);
+    ```
+    */
+    pub fn values(&self) -> Values<'_, A> {
+        Values {
+            iter: self.array.as_slice()[..self.len].iter(),
+        }
+    }
+    /**
+    Gets a mutable iterator over the values of the map, sorted
+
+    # Example
+
+    ```
+    use tinymap::ArrayMap;
+
+    let mut a = ArrayMap::<[(i32, String); 10]>::new();
+    a.insert(1, String::from("hello"));
+    a.insert(2, String::from("goodbye"));
+
+    for value in a.values_mut() {
+        value.push_str("!");
+    }
+
+    let values: Vec<String> = a.values().cloned().collect();
+    assert_eq!(values, [String::from("hello!"),
+                        String::from("goodbye!")]);
+    ```
+    */
+    pub fn values_mut(&mut self) -> ValuesMut<'_, A> {
+        ValuesMut {
+            iter: self.array.as_mut_slice()[..self.len].iter_mut(),
+        }
+    }
 }
 
 impl<A, K, V> ArrayMap<A>
@@ -308,6 +428,7 @@ where
             let mut entry = A::Item::new(K::default(), V::default());
             swap(&mut entry, &mut slice[i]);
             let (_, value) = entry.into_pair();
+            self.len -= 1;
             Some(value)
         } else {
             None
@@ -326,5 +447,107 @@ where
     fn index(&self, key: &Q) -> &Self::Output {
         self.get(key)
             .unwrap_or_else(|| panic!("No entry found for key"))
+    }
+}
+
+/// An iterator over references to the key-value pairs in an ArrayMap
+pub struct Iter<'a, A>
+where
+    A: Array,
+{
+    iter: std::slice::Iter<'a, A::Item>,
+}
+
+impl<'a, A> Iterator for Iter<'a, A>
+where
+    A: Array,
+{
+    type Item = &'a A::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
+/// An iterator over references to keys and mutable references to values in an ArrayMap
+pub struct IterMut<'a, A>
+where
+    A: Array,
+{
+    iter: std::slice::IterMut<'a, A::Item>,
+}
+
+impl<'a, A, K, V> Iterator for IterMut<'a, A>
+where
+    A: Array,
+    A::Item: MapEntry<Key = K, Value = V>,
+    K: 'a,
+    V: 'a,
+{
+    type Item = (&'a K, &'a mut V);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next()
+            .map(MapEntry::as_mut_pair)
+            .map(|(k, v)| (&*k, v))
+    }
+}
+
+/// An iterator over references to the keys in an ArrayMap
+pub struct Keys<'a, A>
+where
+    A: Array,
+{
+    iter: std::slice::Iter<'a, A::Item>,
+}
+
+impl<'a, A, K> Iterator for Keys<'a, A>
+where
+    A: Array,
+    A::Item: MapEntry<Key = K>,
+    K: 'a,
+{
+    type Item = &'a K;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(MapEntry::key)
+    }
+}
+
+/// An iterator over references to the values in an ArrayMap
+pub struct Values<'a, A>
+where
+    A: Array,
+{
+    iter: std::slice::Iter<'a, A::Item>,
+}
+
+impl<'a, A, V> Iterator for Values<'a, A>
+where
+    A: Array,
+    A::Item: MapEntry<Value = V>,
+    V: 'a,
+{
+    type Item = &'a V;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(MapEntry::value)
+    }
+}
+
+/// An iterator over mutable references to the values in an ArrayMap
+pub struct ValuesMut<'a, A>
+where
+    A: Array,
+{
+    iter: std::slice::IterMut<'a, A::Item>,
+}
+
+impl<'a, A, V> Iterator for ValuesMut<'a, A>
+where
+    A: Array,
+    A::Item: MapEntry<Value = V>,
+    V: 'a,
+{
+    type Item = &'a mut V;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(MapEntry::value_mut)
     }
 }

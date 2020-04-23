@@ -6,6 +6,8 @@
 
 pub mod array_map;
 
+pub use array_map::ArrayMap;
+
 /// Behavior for an entry in a map
 pub trait MapEntry {
     /// The key type
@@ -22,6 +24,8 @@ pub trait MapEntry {
     fn value(&self) -> &Self::Value;
     /// Get a mutable reference to the value
     fn value_mut(&mut self) -> &mut Self::Value;
+    /// Get mutable references to the key and value
+    fn as_mut_pair(&mut self) -> (&mut Self::Key, &mut Self::Value);
 }
 
 impl<K, V> MapEntry for (K, V) {
@@ -41,6 +45,9 @@ impl<K, V> MapEntry for (K, V) {
     }
     fn value_mut(&mut self) -> &mut Self::Value {
         &mut self.1
+    }
+    fn as_mut_pair(&mut self) -> (&mut Self::Key, &mut Self::Value) {
+        (&mut self.0, &mut self.1)
     }
 }
 
