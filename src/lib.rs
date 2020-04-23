@@ -66,8 +66,8 @@ arrayset!( VALUE_TYPE; CAPACITY ) -> tinymap::ArraySet::<[VALUE_TYPE; CAPACITY]>
 ```
 use tinymap::arrayset;
 
-let mut map = arrayset!(i32; 10);
-map.insert(1);
+let mut set = arrayset!(i32; 10);
+set.insert(1);
 ```
 */
 #[macro_export]
