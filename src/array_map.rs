@@ -1,6 +1,6 @@
 //! An array-backed, map-like data structure.
 
-use std::{borrow::Borrow, fmt, mem::swap, ops::Index};
+use std::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
 
 use crate::{Array, MapEntry};
 
@@ -438,11 +438,11 @@ where
     {
         if let Ok(i) = self.find(key) {
             let slice = self.array.as_mut_slice();
+            let mut entry = A::Item::new(K::default(), V::default());
+            swap(&mut entry, &mut slice[i]);
             for j in (i + 1)..self.len {
                 slice.swap(j - 1, j);
             }
-            let mut entry = A::Item::new(K::default(), V::default());
-            swap(&mut entry, &mut slice[i]);
             let (_, value) = entry.into_pair();
             self.len -= 1;
             Some(value)
@@ -465,6 +465,7 @@ where
     assert_eq!(3, map.len());
     map.retain(|_, val| val.is_alphabetic());
     assert_eq!(2, map.len());
+    assert_eq!(None, map.get(&3));
     ```
     */
     pub fn retain<F>(&mut self, mut predicate: F)
@@ -509,6 +510,25 @@ where
         f.debug_map()
             .entries(self.iter().map(|entry| (entry.key(), entry.value())))
             .finish()
+    }
+}
+
+/// Elements from the iterator beyond the map's capacity will be discarded.
+impl<A, K, V> FromIterator<A::Item> for ArrayMap<A>
+where
+    A: Array + Default,
+    A::Item: MapEntry<Key = K, Value = V>,
+    K: Ord,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = A::Item>,
+    {
+        let mut map = ArrayMap::default();
+        for (key, value) in iter.into_iter().map(MapEntry::into_pair).take(A::CAPACITY) {
+            map.insert(key, value);
+        }
+        map
     }
 }
 
