@@ -17,11 +17,15 @@ pub mod array_map;
 pub mod array_set;
 #[cfg(feature = "alloc")]
 pub mod tiny_map;
+#[cfg(feature = "alloc")]
+pub mod tiny_set;
 
 pub use array_map::ArrayMap;
 pub use array_set::ArraySet;
 #[cfg(feature = "alloc")]
 pub use tiny_map::TinyMap;
+#[cfg(feature = "alloc")]
+pub use tiny_set::TinySet;
 
 /**
 Create a new ArrayMap with the specified parameters
@@ -96,6 +100,32 @@ map.insert(1, "a");
 macro_rules! tinymap {
     ($k:ty => $v:ty; $n:expr) => {
         tinymap::TinyMap::<[($k, $v); $n]>::new()
+    };
+}
+
+/**
+Create a new TinySet with the specified parameters
+
+# Expansion
+
+```ignore
+tinyset!( VALUE_TYPE; CAPACITY ) -> tinymap::TinySet::<[VALUE_TYPE; CAPACITY]>::new()
+```
+
+# Example
+
+```
+use tinymap::tinyset;
+
+let mut set = tinyset!(i32; 10);
+set.insert(1);
+```
+*/
+#[cfg(feature = "alloc")]
+#[macro_export]
+macro_rules! tinyset {
+    ($v:ty; $n:expr) => {
+        tinymap::TinySet::<[$v; $n]>::new()
     };
 }
 

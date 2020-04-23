@@ -1,6 +1,7 @@
 //! A map that starts on the stack but can automatically move to the heap
 
-use std::{borrow::Borrow, collections::BTreeMap, fmt, iter::FromIterator, mem::swap, ops::Index};
+use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
+use std::collections::BTreeMap;
 
 use crate::{Array, ArrayMap, MapEntry};
 
@@ -12,9 +13,9 @@ where
     A: Array,
     A::Item: MapEntry,
 {
-    /// An TinyMap with items on the stack
+    /// An map with items on the stack
     Stack(ArrayMap<A>),
-    /// A BtreeMap with items in the heap
+    /// A map with items in the heap
     Heap(BTreeMap<<A::Item as MapEntry>::Key, <A::Item as MapEntry>::Value>),
 }
 
@@ -459,26 +460,32 @@ where
     }
 }
 
-// impl<A, K, V> From<A> for TinyMap<A>
-// where
-//     A: Array,
-//     A::Item: MapEntry<Key = K, Value = V>,
-//     K: Ord,
-// {
-//     fn from(mut array: A) -> Self {
-//         array.as_mut_slice().sort_by(|a, b| a.key().cmp(b.key()));
-//         TinyMap {
-//             array,
-//             len: A::CAPACITY,
-//         }
-//     }
-// }
+impl<A> From<ArrayMap<A>> for TinyMap<A>
+where
+    A: Array,
+    A::Item: MapEntry,
+{
+    fn from(map: ArrayMap<A>) -> Self {
+        TinyMap::Stack(map)
+    }
+}
+
+impl<A, K> From<A> for TinyMap<A>
+where
+    A: Array,
+    A::Item: MapEntry<Key = K>,
+    K: Ord,
+{
+    fn from(array: A) -> Self {
+        TinyMap::from(ArrayMap::from(array))
+    }
+}
 
 /// Elements from the iterator beyond the map's capacity will be discarded.
-impl<A, K, V> FromIterator<A::Item> for TinyMap<A>
+impl<A, K> FromIterator<A::Item> for TinyMap<A>
 where
     A: Array + Default,
-    A::Item: MapEntry<Key = K, Value = V>,
+    A::Item: MapEntry<Key = K>,
     K: Ord,
 {
     fn from_iter<I>(iter: I) -> Self

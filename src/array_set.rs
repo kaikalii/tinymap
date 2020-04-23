@@ -1,20 +1,16 @@
-//! An array-backed, set-like data structure.
+//! An array-backed, set-like data structure
 
 use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap};
 
 use crate::Array;
 
 /**
-An array-backed, set-like data structure.
+An array-backed, set-like data structure
 
 ArraySet wraps an array of values and supports operation similar to a BTreeSet or HashSet.
 It has a fixed capacity, but it keeps track of how many values have been inserted and removed.
 
 Because this crate uses no unsafe code, value types must implement Default.
-
-# Efficiency
-
-In general...
 */
 #[derive(Clone, Copy, Default)]
 pub struct ArraySet<A> {
@@ -136,10 +132,10 @@ where
     }
 }
 
-impl<A, T> ArraySet<A>
+impl<A> ArraySet<A>
 where
-    A: Array<Item = T>,
-    T: Ord,
+    A: Array,
+    A::Item: Ord,
 {
     /**
     Inserts an value into the set
@@ -164,7 +160,7 @@ where
     assert_eq!(set.len(), 1);
     ```
     */
-    pub fn insert(&mut self, value: T) -> bool {
+    pub fn insert(&mut self, value: A::Item) -> bool {
         self.try_insert(value)
             .unwrap_or_else(|_| panic!("Insertion would excede capacity"))
     }
@@ -192,7 +188,7 @@ where
     assert!(set.try_insert(0).is_err());
     ```
     */
-    pub fn try_insert(&mut self, mut value: T) -> Result<bool, T> {
+    pub fn try_insert(&mut self, mut value: A::Item) -> Result<bool, A::Item> {
         if self.len == A::CAPACITY {
             return Err(value);
         }
@@ -211,13 +207,13 @@ where
     }
 }
 
-impl<A, T> ArraySet<A>
+impl<A> ArraySet<A>
 where
-    A: Array<Item = T>,
+    A: Array,
 {
     fn find<Q>(&self, value: &Q) -> Result<usize, usize>
     where
-        T: Borrow<Q>,
+        A::Item: Borrow<Q>,
         Q: Ord,
     {
         self.array.as_slice()[..self.len]
@@ -238,7 +234,7 @@ where
     */
     pub fn contains<Q>(&self, value: &Q) -> bool
     where
-        T: Borrow<Q>,
+        A::Item: Borrow<Q>,
         Q: Ord,
     {
         self.find(value).is_ok()
@@ -256,9 +252,9 @@ where
     assert_eq!(set.get(&4), None);
     ```
     */
-    pub fn get<Q>(&self, value: &Q) -> Option<&T>
+    pub fn get<Q>(&self, value: &Q) -> Option<&A::Item>
     where
-        T: Borrow<Q>,
+        A::Item: Borrow<Q>,
         Q: Ord,
     {
         if let Ok(i) = self.find(value) {
@@ -269,10 +265,10 @@ where
     }
 }
 
-impl<A, T> ArraySet<A>
+impl<A> ArraySet<A>
 where
-    A: Array<Item = T>,
-    T: Ord + Default,
+    A: Array,
+    A::Item: Ord + Default,
 {
     /**
     Removes a value from the set. Returns whether the value was present in the set.
@@ -291,12 +287,12 @@ where
     */
     pub fn remove<Q>(&mut self, value: &Q) -> bool
     where
-        T: Borrow<Q>,
+        A::Item: Borrow<Q>,
         Q: Ord,
     {
         if let Ok(i) = self.find(value) {
             let slice = self.array.as_mut_slice();
-            let mut value = T::default();
+            let mut value = A::Item::default();
             swap(&mut value, &mut slice[i]);
             for j in (i + 1)..self.len {
                 slice.swap(j - 1, j);
@@ -327,7 +323,7 @@ where
     */
     pub fn retain<F>(&mut self, mut predicate: F)
     where
-        F: FnMut(&T) -> bool,
+        F: FnMut(&A::Item) -> bool,
     {
         for i in (0..self.len).rev() {
             let slice = self.array.as_mut_slice();
@@ -341,20 +337,20 @@ where
     }
 }
 
-impl<A, T> fmt::Debug for ArraySet<A>
+impl<A> fmt::Debug for ArraySet<A>
 where
-    A: Array<Item = T>,
-    T: fmt::Debug,
+    A: Array,
+    A::Item: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
 }
 
-impl<A, T> From<A> for ArraySet<A>
+impl<A> From<A> for ArraySet<A>
 where
-    A: Array<Item = T>,
-    T: Ord,
+    A: Array,
+    A::Item: Ord,
 {
     fn from(mut array: A) -> Self {
         array.as_mut_slice().sort_unstable();
@@ -380,10 +376,10 @@ where
 }
 
 /// Elements from the iterator beyond the set's capacity will be discarded.
-impl<A, T> FromIterator<A::Item> for ArraySet<A>
+impl<A> FromIterator<A::Item> for ArraySet<A>
 where
-    A: Array<Item = T> + Default,
-    T: Ord,
+    A: Array + Default,
+    A::Item: Ord,
 {
     fn from_iter<I>(iter: I) -> Self
     where

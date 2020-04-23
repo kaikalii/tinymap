@@ -1,11 +1,11 @@
-//! An array-backed, map-like data structure.
+//! An array-backed, map-like data structure
 
 use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
 
 use crate::{Array, MapEntry};
 
 /**
-An array-backed, map-like data structure.
+An array-backed, map-like data structure
 
 ArrayMap wraps an array of key-value pairs and supports operation similar to a BTreeMap or HashMap.
 It has a fixed capacity, but it keeps track of how many pairs have been inserted and removed.
