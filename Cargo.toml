@@ -7,9 +7,18 @@ edition = '2018'
 [dependencies]
 
 [dev-dependencies]
+criterion = "0.3"
 eggtimer = '*'
 rand = "*"
 
 [features]
 default = ['alloc']
 alloc = []
+
+[[bench]]
+name = "map"
+harness = false
+
+[[bench]]
+name = "set"
+harness = false
