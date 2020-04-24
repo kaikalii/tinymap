@@ -135,49 +135,6 @@ macro_rules! tinyset {
     };
 }
 
-/// Behavior for an entry in a map
-pub trait MapEntry {
-    /// The key type
-    type Key;
-    /// The value type
-    type Value;
-    /// Create a new entry
-    fn new(k: Self::Key, v: Self::Value) -> Self;
-    /// Turn the entry into a key-value pair
-    fn into_pair(self) -> (Self::Key, Self::Value);
-    /// Get a reference to the key
-    fn key(&self) -> &Self::Key;
-    /// Get a reference to the value
-    fn value(&self) -> &Self::Value;
-    /// Get a mutable reference to the value
-    fn value_mut(&mut self) -> &mut Self::Value;
-    /// Get mutable references to the key and value
-    fn as_mut_pair(&mut self) -> (&mut Self::Key, &mut Self::Value);
-}
-
-impl<K, V> MapEntry for (K, V) {
-    type Key = K;
-    type Value = V;
-    fn new(k: Self::Key, v: Self::Value) -> Self {
-        (k, v)
-    }
-    fn into_pair(self) -> (Self::Key, Self::Value) {
-        self
-    }
-    fn key(&self) -> &Self::Key {
-        &self.0
-    }
-    fn value(&self) -> &Self::Value {
-        &self.1
-    }
-    fn value_mut(&mut self) -> &mut Self::Value {
-        &mut self.1
-    }
-    fn as_mut_pair(&mut self) -> (&mut Self::Key, &mut Self::Value) {
-        (&mut self.0, &mut self.1)
-    }
-}
-
 /// Behavior for an array
 pub trait Array {
     /// The Item type
@@ -191,6 +148,23 @@ pub trait Array {
     /// Turn the array into a boxed slice
     #[cfg(feature = "alloc")]
     fn into_boxed_slice(self) -> Box<[Self::Item]>;
+}
+
+/// Behavior for a map array
+pub trait MapArray {
+    /// The Key type
+    type Key;
+    /// The Value type
+    type Value;
+    /// The array's capacity
+    const CAPACITY: usize;
+    /// Get a slice into the array
+    fn as_slice(&self) -> &[(Self::Key, Self::Value)];
+    /// Get a mutable slice into the array
+    fn as_mut_slice(&mut self) -> &mut [(Self::Key, Self::Value)];
+    /// Turn the array into a boxed slice
+    #[cfg(feature = "alloc")]
+    fn into_boxed_slice(self) -> Box<[(Self::Key, Self::Value)]>;
 }
 
 macro_rules! impl_array {
@@ -207,6 +181,21 @@ macro_rules! impl_array {
                 }
                 #[cfg(feature = "alloc")]
                 fn into_boxed_slice(self) -> Box<[Self::Item]> {
+                    Box::new(self)
+                }
+            }
+            impl<K, V> MapArray for [(K, V); $n]  {
+                type Key = K;
+                type Value = V;
+                const CAPACITY: usize = $n;
+                fn as_slice(&self) -> &[(Self::Key, Self::Value)] {
+                    self
+                }
+                fn as_mut_slice(&mut self) -> &mut [(Self::Key, Self::Value)] {
+                    self
+                }
+                #[cfg(feature = "alloc")]
+                fn into_boxed_slice(self) -> Box<[(Self::Key, Self::Value)]> {
                     Box::new(self)
                 }
             }
