@@ -443,6 +443,21 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
+impl<A> IntoIterator for TinyMap<A>
+where
+    A: MapArray,
+{
+    type Item = (A::Key, A::Value);
+    type IntoIter = IntoIter<A>;
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            TinyMap::Stack(map) => IntoIter::Stack(map.into_iter()),
+            TinyMap::Heap(map) => IntoIter::Heap(map.into_iter()),
+        }
+    }
+}
+
 /// Elements from the iterator beyond the map's capacity will be discarded.
 impl<A> FromIterator<(A::Key, A::Value)> for TinyMap<A>
 where
@@ -458,6 +473,30 @@ where
             map.insert(key, value);
         }
         map
+    }
+}
+
+/// An consuming iterator over the values in an ArraySet
+pub enum IntoIter<A>
+where
+    A: MapArray,
+{
+    #[doc(hidden)]
+    Stack(crate::array_map::IntoIter<A>),
+    #[doc(hidden)]
+    Heap(std::collections::btree_map::IntoIter<A::Key, A::Value>),
+}
+
+impl<A> Iterator for IntoIter<A>
+where
+    A: MapArray,
+{
+    type Item = (A::Key, A::Value);
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            IntoIter::Stack(iter) => iter.next(),
+            IntoIter::Heap(iter) => iter.next(),
+        }
     }
 }
 
