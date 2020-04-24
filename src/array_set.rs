@@ -7,7 +7,7 @@ use core::{
     mem::{swap, zeroed},
 };
 
-use crate::Array;
+use crate::{Array, Entry};
 
 /**
 An array-backed, set-like data structure
@@ -36,9 +36,9 @@ impl<A> ArraySet<A> {
 
     # Example
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut set = ArraySet::<[i32; 10]>::new();
+    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
     ```
     */
     pub fn new() -> Self {
@@ -49,9 +49,9 @@ impl<A> ArraySet<A> {
 
     # Example
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut v = ArraySet::<[i32; 10]>::new();
+    let mut v = ArraySet::<[Entry<i32>; 10]>::new();
     v.insert(1);
     v.clear();
     assert!(v.is_empty());
@@ -69,9 +69,9 @@ impl<A> ArraySet<A> {
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut v = ArraySet::<[i32; 10]>::new();
+    let mut v = ArraySet::<[Entry<i32>; 10]>::new();
     assert_eq!(v.len(), 0);
     v.insert(1);
     assert_eq!(v.len(), 1);
@@ -86,9 +86,9 @@ impl<A> ArraySet<A> {
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut v = ArraySet::<[i32; 10]>::new();
+    let mut v = ArraySet::<[Entry<i32>; 10]>::new();
     assert!(v.is_empty());
     v.insert(1);
     assert!(!v.is_empty());
@@ -109,9 +109,9 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut a = ArraySet::<[i32; 10]>::new();
+    let mut a = ArraySet::<[Entry<i32>; 10]>::new();
     assert_eq!(10, a.capacity());
     ```
     */
@@ -124,9 +124,9 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let set = ArraySet::from([3, 1, 2]);
+    let set: TinySet<[Entry<i32>; 3]> = [3, 1, 2].iter().copied().collect();
     let mut set_iter = set.iter();
     assert_eq!(set_iter.next(), Some(&1));
     assert_eq!(set_iter.next(), Some(&2));
@@ -160,9 +160,9 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut set = ArraySet::<[i32; 10]>::new();
+    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
 
     assert_eq!(set.insert(2), true);
     assert_eq!(set.insert(2), false);
@@ -188,16 +188,16 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut set = ArraySet::<[i32; 3]>::new();
+    let mut set = ArraySet::<[Entry<i32>; 3]>::new();
     assert!(set.try_insert(37).is_ok());
     assert!(set.try_insert(2).is_ok());
     assert!(set.try_insert(16).is_ok());
     assert!(set.try_insert(0).is_err());
     ```
     */
-    pub fn try_insert(&mut self, mut value: A::Item) -> Result<bool, A::Item> {
+    pub fn try_insert(&mut self, value: A::Item) -> Result<bool, A::Item> {
         if self.len == A::CAPACITY {
             return Err(value);
         }
@@ -208,6 +208,7 @@ where
                 for j in ((i + 1)..=self.len).rev() {
                     slice.swap(j - 1, j);
                 }
+                let mut value = Entry::new(value);
                 swap(&mut value, &mut slice[i]);
                 self.len += 1;
                 Ok(true)
@@ -225,8 +226,9 @@ where
         A::Item: Borrow<Q>,
         Q: Ord,
     {
-        self.array.as_slice()[..self.len]
-            .binary_search_by_key(&value.borrow(), |value| value.borrow())
+        self.array.as_slice()[..self.len].binary_search_by_key(&value.borrow(), |value| {
+            unsafe { value.as_ptr().as_ref() }.unwrap().borrow()
+        })
     }
     /**
     Returns true if the set contains a value for the specified value
@@ -234,9 +236,9 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let set = ArraySet::from([1, 2, 3]);
+    let set: ArraySet<[Entry<_>; 3]> = [1, 2, 3].iter().copied().collect();
     assert_eq!(set.contains(&1), true);
     assert_eq!(set.contains(&4), false);
     ```
@@ -254,9 +256,9 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut set = ArraySet::from([1, 2, 3]);
+    let mut set: ArraySet<[Entry<_>; 3]> = [1, 2, 3].iter().copied().collect();
     assert_eq!(set.get(&2), Some(&2));
     assert_eq!(set.get(&4), None);
     ```
@@ -267,7 +269,7 @@ where
         Q: Ord,
     {
         if let Ok(i) = self.find(value) {
-            Some(&self.array.as_slice()[i])
+            Some(&unsafe { self.array.as_slice()[i].as_ptr().as_ref() }.unwrap())
         } else {
             None
         }
@@ -285,9 +287,9 @@ where
     # Example
 
     ```
-    use tinymap::ArraySet;
+    use tinymap::*;
 
-    let mut set = ArraySet::<[i32; 10]>::new();
+    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
 
     set.insert(2);
     assert_eq!(set.remove(&2), true);
@@ -330,7 +332,11 @@ where
     A::Item: Ord,
 {
     fn from(mut array: A) -> Self {
-        array.as_mut_slice().sort_unstable();
+        array.as_mut_slice().sort_unstable_by(|a, b| {
+            unsafe { a.as_ptr().as_ref() }
+                .unwrap()
+                .cmp(unsafe { b.as_ptr().as_ref() }.unwrap())
+        });
         ArraySet {
             array,
             len: A::CAPACITY,
@@ -376,7 +382,7 @@ pub struct IntoIter<A>
 where
     A: Array,
 {
-    iter: std::vec::IntoIter<A::Item>,
+    iter: std::vec::IntoIter<Entry<A::Item>>,
 }
 
 #[cfg(feature = "alloc")]
@@ -386,7 +392,7 @@ where
 {
     type Item = A::Item;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|value| unsafe { value.assume_init() })
     }
 }
 
@@ -395,7 +401,7 @@ pub struct Iter<'a, A>
 where
     A: Array,
 {
-    iter: core::slice::Iter<'a, A::Item>,
+    iter: core::slice::Iter<'a, Entry<A::Item>>,
 }
 
 impl<'a, A> Iterator for Iter<'a, A>
@@ -404,6 +410,8 @@ where
 {
     type Item = &'a A::Item;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter
+            .next()
+            .map(|value| unsafe { value.as_ptr().as_ref() }.unwrap())
     }
 }

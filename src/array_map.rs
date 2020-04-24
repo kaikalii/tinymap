@@ -2,7 +2,7 @@
 
 use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
 
-use crate::MapArray;
+use crate::{Entry, MapArray};
 
 /**
 An array-backed, map-like data structure
@@ -16,47 +16,15 @@ pub struct ArrayMap<A> {
     len: usize,
 }
 
-impl<A> Default for ArrayMap<A> {
+impl<A> Default for ArrayMap<A>
+where
+    A: MapArray,
+{
     fn default() -> Self {
         ArrayMap {
-            array: unimplemented!(),
+            array: A::uninitialized(),
             len: 0,
         }
-    }
-}
-
-impl<A> ArrayMap<A> {
-    /**
-    Creates a new empty ArrayMap
-
-    # Example
-    ```
-    use tinymap::ArrayMap;
-
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
-
-    // entries can now be inserted into the empty map
-    map.insert(1, "a");
-    ```
-    */
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /**
-    Clears the map, removing all elements
-
-    # Example
-    ```
-    use tinymap::ArrayMap;
-
-    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
-    a.insert(1, "a");
-    a.clear();
-    assert!(a.is_empty());
-    ```
-    */
-    pub fn clear(&mut self) {
-        *self = Self::new();
     }
 }
 
@@ -67,9 +35,9 @@ impl<A> ArrayMap<A> {
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     assert_eq!(a.len(), 0);
     a.insert(1, "a");
     assert_eq!(a.len(), 1);
@@ -84,9 +52,9 @@ impl<A> ArrayMap<A> {
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     assert!(a.is_empty());
     a.insert(1, "a");
     assert!(!a.is_empty());
@@ -102,14 +70,46 @@ where
     A: MapArray,
 {
     /**
+    Creates a new empty ArrayMap
+
+    # Example
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+
+    // entries can now be inserted into the empty map
+    map.insert(1, "a");
+    ```
+    */
+    pub fn new() -> Self {
+        Self::default()
+    }
+    /**
+    Clears the map, removing all elements
+
+    # Example
+    ```
+    use tinymap::*;
+
+    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    a.insert(1, "a");
+    a.clear();
+    assert!(a.is_empty());
+    ```
+    */
+    pub fn clear(&mut self) {
+        *self = Self::new();
+    }
+    /**
     Returns the maximum number of elements the map can contain
 
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     assert_eq!(10, a.capacity());
     ```
     */
@@ -121,7 +121,9 @@ where
         A::Key: Borrow<Q>,
         Q: Ord,
     {
-        self.array.as_slice()[..self.len].binary_search_by_key(&key.borrow(), |(k, _)| k.borrow())
+        self.array.as_slice()[..self.len].binary_search_by_key(&key.borrow(), |entry| {
+            unsafe { entry.as_ptr().as_ref() }.unwrap().0.borrow()
+        })
     }
     /**
     Returns true if the map contains a value for the specified key
@@ -129,9 +131,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     assert_eq!(map.contains_key(&1), true);
     assert_eq!(map.contains_key(&2), false);
@@ -150,9 +152,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     assert_eq!(map.get(&1), Some(&"a"));
     assert_eq!(map.get(&2), None);
@@ -164,7 +166,11 @@ where
         Q: Ord,
     {
         if let Ok(i) = self.find(key) {
-            Some(&self.array.as_slice()[i].1)
+            Some(
+                &unsafe { self.array.as_slice()[i].as_ptr().as_ref() }
+                    .unwrap()
+                    .1,
+            )
         } else {
             None
         }
@@ -175,9 +181,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     if let Some(x) = map.get_mut(&1) {
         *x = "b";
@@ -191,7 +197,11 @@ where
         Q: Ord,
     {
         if let Ok(i) = self.find(key) {
-            Some(&mut self.array.as_mut_slice()[i].1)
+            Some(
+                &mut unsafe { self.array.as_mut_slice()[i].as_mut_ptr().as_mut() }
+                    .unwrap()
+                    .1,
+            )
         } else {
             None
         }
@@ -202,9 +212,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     map.insert(3, "c");
     map.insert(2, "b");
     map.insert(1, "a");
@@ -228,9 +238,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(&str, i32); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(&str, i32)>; 10]>::new();
     map.insert("a", 1);
     map.insert("b", 2);
     map.insert("c", 3);
@@ -254,9 +264,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     a.insert(2, "b");
     a.insert(1, "a");
 
@@ -275,9 +285,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut a = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     a.insert(1, "hello");
     a.insert(2, "goodbye");
 
@@ -296,9 +306,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut a = ArrayMap::<[(i32, String); 10]>::new();
+    let mut a = ArrayMap::<[Entry<(i32, String)>; 10]>::new();
     a.insert(1, String::from("hello"));
     a.insert(2, String::from("goodbye"));
 
@@ -337,9 +347,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     assert_eq!(map.insert(37, "a"), None);
     assert_eq!(map.is_empty(), false);
 
@@ -367,9 +377,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 3]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 3]>::new();
     assert!(map.try_insert(37, "a").is_ok());
     assert!(map.try_insert(2, "b").is_ok());
     assert!(map.try_insert(16, "c").is_ok());
@@ -386,17 +396,16 @@ where
         }
         match self.find(&key) {
             Ok(i) => {
-                let mut entry = (key, value);
+                let mut entry = Entry::new((key, value));
                 swap(&mut entry, &mut self.array.as_mut_slice()[i]);
-                let (_, value) = entry;
-                Ok(Some(value))
+                Ok(Some(unsafe { entry.assume_init() }.1))
             }
             Err(i) => {
                 let slice = self.array.as_mut_slice();
                 for j in ((i + 1)..=self.len).rev() {
                     slice.swap(j - 1, j);
                 }
-                let mut entry = (key, value);
+                let mut entry = Entry::new((key, value));
                 swap(&mut entry, &mut slice[i]);
                 self.len += 1;
                 Ok(None)
@@ -408,8 +417,7 @@ where
 impl<A> ArrayMap<A>
 where
     A: MapArray,
-    A::Key: Ord + Default,
-    A::Value: Default,
+    A::Key: Ord,
 {
     /**
     Removes a key from the map, returning the value at the key if the key was previously in the map
@@ -417,9 +425,9 @@ where
     # Example
 
     ```
-    use tinymap::ArrayMap;
+    use tinymap::*;
 
-    let mut map = ArrayMap::<[(i32, &str); 10]>::new();
+    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     assert_eq!(map.remove(&1), Some("a"));
     assert_eq!(map.remove(&1), None);
@@ -432,14 +440,13 @@ where
     {
         if let Ok(i) = self.find(key) {
             let slice = self.array.as_mut_slice();
-            let mut entry = (A::Key::default(), A::Value::default());
+            let mut entry = Entry::uninit();
             swap(&mut entry, &mut slice[i]);
             for j in (i + 1)..self.len {
                 slice.swap(j - 1, j);
             }
-            let (_, value) = entry;
             self.len -= 1;
-            Some(value)
+            Some(unsafe { entry.assume_init() }.1)
         } else {
             None
         }
@@ -478,7 +485,12 @@ where
     A::Key: Ord,
 {
     fn from(mut array: A) -> Self {
-        array.as_mut_slice().sort_unstable_by(|a, b| a.0.cmp(&b.0));
+        array.as_mut_slice().sort_unstable_by(|a, b| {
+            unsafe { a.as_ptr().as_ref() }
+                .unwrap()
+                .0
+                .cmp(&unsafe { b.as_ptr().as_ref() }.unwrap().0)
+        });
         ArrayMap {
             array,
             len: A::CAPACITY,
@@ -503,7 +515,7 @@ where
 /// Elements from the iterator beyond the map's capacity will be discarded.
 impl<A> FromIterator<(A::Key, A::Value)> for ArrayMap<A>
 where
-    A: MapArray + Default,
+    A: MapArray,
     A::Key: Ord,
 {
     fn from_iter<I>(iter: I) -> Self
@@ -524,7 +536,7 @@ pub struct IntoIter<A>
 where
     A: MapArray,
 {
-    iter: std::vec::IntoIter<(A::Key, A::Value)>,
+    iter: std::vec::IntoIter<Entry<(A::Key, A::Value)>>,
 }
 
 #[cfg(feature = "alloc")]
@@ -534,7 +546,7 @@ where
 {
     type Item = (A::Key, A::Value);
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|entry| unsafe { entry.assume_init() })
     }
 }
 
@@ -543,7 +555,7 @@ pub struct Iter<'a, A>
 where
     A: MapArray,
 {
-    iter: core::slice::Iter<'a, (A::Key, A::Value)>,
+    iter: core::slice::Iter<'a, Entry<(A::Key, A::Value)>>,
 }
 
 impl<'a, A> Iterator for Iter<'a, A>
@@ -552,7 +564,10 @@ where
 {
     type Item = (&'a A::Key, &'a A::Value);
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(k, v)| (k, v))
+        self.iter.next().map(|entry| {
+            let pair = unsafe { entry.as_ptr().as_ref() }.unwrap();
+            (&pair.0, &pair.1)
+        })
     }
 }
 
@@ -561,7 +576,7 @@ pub struct IterMut<'a, A>
 where
     A: MapArray,
 {
-    iter: core::slice::IterMut<'a, (A::Key, A::Value)>,
+    iter: core::slice::IterMut<'a, Entry<(A::Key, A::Value)>>,
 }
 
 impl<'a, A> Iterator for IterMut<'a, A>
@@ -572,7 +587,10 @@ where
 {
     type Item = (&'a A::Key, &'a mut A::Value);
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(k, v)| (&*k, v))
+        self.iter.next().map(|entry| {
+            let pair = unsafe { entry.as_mut_ptr().as_mut() }.unwrap();
+            (&pair.0, &mut pair.1)
+        })
     }
 }
 
@@ -581,7 +599,7 @@ pub struct Keys<'a, A>
 where
     A: MapArray,
 {
-    iter: core::slice::Iter<'a, (A::Key, A::Value)>,
+    iter: core::slice::Iter<'a, Entry<(A::Key, A::Value)>>,
 }
 
 impl<'a, A> Iterator for Keys<'a, A>
@@ -591,7 +609,9 @@ where
 {
     type Item = &'a A::Key;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(k, _)| k)
+        self.iter
+            .next()
+            .map(|entry| &unsafe { entry.as_ptr().as_ref() }.unwrap().0)
     }
 }
 
@@ -600,7 +620,7 @@ pub struct Values<'a, A>
 where
     A: MapArray,
 {
-    iter: core::slice::Iter<'a, (A::Key, A::Value)>,
+    iter: core::slice::Iter<'a, Entry<(A::Key, A::Value)>>,
 }
 
 impl<'a, A> Iterator for Values<'a, A>
@@ -610,7 +630,9 @@ where
 {
     type Item = &'a A::Value;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(_, v)| v)
+        self.iter
+            .next()
+            .map(|entry| &unsafe { entry.as_ptr().as_ref() }.unwrap().1)
     }
 }
 
@@ -619,7 +641,7 @@ pub struct ValuesMut<'a, A>
 where
     A: MapArray,
 {
-    iter: core::slice::IterMut<'a, (A::Key, A::Value)>,
+    iter: core::slice::IterMut<'a, Entry<(A::Key, A::Value)>>,
 }
 
 impl<'a, A> Iterator for ValuesMut<'a, A>
@@ -629,6 +651,8 @@ where
 {
     type Item = &'a mut A::Value;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(_, v)| v)
+        self.iter
+            .next()
+            .map(|entry| &mut unsafe { entry.as_mut_ptr().as_mut() }.unwrap().1)
     }
 }

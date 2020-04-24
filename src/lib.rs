@@ -35,7 +35,7 @@ pub use tiny_map::TinyMap;
 #[cfg(feature = "alloc")]
 pub use tiny_set::TinySet;
 
-use core::mem::MaybeUninit;
+use core::mem::{zeroed, MaybeUninit};
 
 /**
 Create a new ArrayMap with the specified parameters
@@ -43,7 +43,7 @@ Create a new ArrayMap with the specified parameters
 # Expansion
 
 ```ignore
-arraymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::ArrayMap::<[Entry<(KEY_TYPE, VALUE_TYPE)>; CAPACITY]>::new()
+arraymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::ArrayMap::<[tinymap::Entry<(KEY_TYPE, VALUE_TYPE)>; CAPACITY]>::new()
 ```
 
 # Example
@@ -58,7 +58,7 @@ map.insert(1, "a");
 #[macro_export]
 macro_rules! arraymap {
     ($k:ty => $v:ty; $n:expr) => {
-        tinymap::ArrayMap::<[($k, $v); $n]>::new()
+        tinymap::ArrayMap::<[tinymap::Entry<($k, $v)>; $n]>::new()
     };
 }
 
@@ -68,7 +68,7 @@ Create a new ArraySet with the specified parameters
 # Expansion
 
 ```ignore
-arrayset!( VALUE_TYPE; CAPACITY ) -> tinymap::ArraySet::<[VALUE_TYPE; CAPACITY]>::new()
+arrayset!( VALUE_TYPE; CAPACITY ) -> tinymap::ArraySet::<[tinymap::Entry<VALUE_TYPE>; CAPACITY]>::new()
 ```
 
 # Example
@@ -83,7 +83,7 @@ set.insert(1);
 #[macro_export]
 macro_rules! arrayset {
     ($v:ty; $n:expr) => {
-        tinymap::ArraySet::<[$v; $n]>::new()
+        tinymap::ArraySet::<[tinymap::Entry<$v>; $n]>::new()
     };
 }
 
@@ -93,7 +93,7 @@ Create a new ArrayMap with the specified parameters
 # Expansion
 
 ```ignore
-tinymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::TinyMap::<[(KEY_TYPE, VALUE_TYPE); CAPACITY]>::new()
+tinymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::TinyMap::<[tinymap::Entry<(KEY_TYPE, VALUE_TYPE)>; CAPACITY]>::new()
 ```
 
 # Example
@@ -109,7 +109,7 @@ map.insert(1, "a");
 #[macro_export]
 macro_rules! tinymap {
     ($k:ty => $v:ty; $n:expr) => {
-        tinymap::TinyMap::<[($k, $v); $n]>::new()
+        tinymap::TinyMap::<[tinymap::Entry<($k, $v)>; $n]>::new()
     };
 }
 
@@ -119,7 +119,7 @@ Create a new TinySet with the specified parameters
 # Expansion
 
 ```ignore
-tinyset!( VALUE_TYPE; CAPACITY ) -> tinymap::TinySet::<[VALUE_TYPE; CAPACITY]>::new()
+tinyset!( VALUE_TYPE; CAPACITY ) -> tinymap::TinySet::<[tinymap::Entry<VALUE_TYPE>; CAPACITY]>::new()
 ```
 
 # Example
@@ -135,9 +135,12 @@ set.insert(1);
 #[macro_export]
 macro_rules! tinyset {
     ($v:ty; $n:expr) => {
-        tinymap::TinySet::<[$v; $n]>::new()
+        tinymap::TinySet::<[tinymap::Entry<$v>; $n]>::new()
     };
 }
+
+/// An entry in an array
+pub type Entry<T> = MaybeUninit<T>;
 
 /// Behavior for an array
 pub trait Array {
@@ -145,14 +148,13 @@ pub trait Array {
     type Item;
     /// The array's capacity
     const CAPACITY: usize;
-    ///
     /// Get a slice into the array
-    fn as_slice(&self) -> &[Self::Item];
+    fn as_slice(&self) -> &[Entry<Self::Item>];
     /// Get a mutable slice into the array
-    fn as_mut_slice(&mut self) -> &mut [Self::Item];
+    fn as_mut_slice(&mut self) -> &mut [Entry<Self::Item>];
     /// Turn the array into a boxed slice
     #[cfg(feature = "alloc")]
-    fn into_boxed_slice(self) -> Box<[Self::Item]>;
+    fn into_boxed_slice(self) -> Box<[Entry<Self::Item>]>;
 }
 
 /// Behavior for a map array
@@ -163,44 +165,49 @@ pub trait MapArray {
     type Value;
     /// The array's capacity
     const CAPACITY: usize;
+    /// Get an uninitialized version of the array
+    fn uninitialized() -> Self;
     /// Get a slice into the array
-    fn as_slice(&self) -> &[(Self::Key, Self::Value)];
+    fn as_slice(&self) -> &[Entry<(Self::Key, Self::Value)>];
     /// Get a mutable slice into the array
-    fn as_mut_slice(&mut self) -> &mut [(Self::Key, Self::Value)];
+    fn as_mut_slice(&mut self) -> &mut [Entry<(Self::Key, Self::Value)>];
     /// Turn the array into a boxed slice
     #[cfg(feature = "alloc")]
-    fn into_boxed_slice(self) -> Box<[(Self::Key, Self::Value)]>;
+    fn into_boxed_slice(self) -> Box<[Entry<(Self::Key, Self::Value)>]>;
 }
 
 macro_rules! impl_array {
     ($($n:literal),*) => {
         $(
-            impl<T> Array for [T; $n]  {
+            impl<T> Array for [Entry<T>; $n]  {
                 type Item = T;
                 const CAPACITY: usize = $n;
-                fn as_slice(&self) -> &[Self::Item] {
+                fn as_slice(&self) -> &[Entry<Self::Item>] {
                     self
                 }
-                fn as_mut_slice(&mut self) -> &mut [Self::Item] {
+                fn as_mut_slice(&mut self) -> &mut [Entry<Self::Item>] {
                     self
                 }
                 #[cfg(feature = "alloc")]
-                fn into_boxed_slice(self) -> Box<[Self::Item]> {
+                fn into_boxed_slice(self) -> Box<[Entry<Self::Item>]> {
                     Box::new(self)
                 }
             }
-            impl<K, V> MapArray for [(K, V); $n]  {
+            impl<K, V> MapArray for [Entry<(K, V)>; $n]  {
                 type Key = K;
                 type Value = V;
                 const CAPACITY: usize = $n;
-                fn as_slice(&self) -> &[(Self::Key, Self::Value)] {
+                fn uninitialized() -> Self {
+                    unsafe { zeroed() }
+                }
+                fn as_slice(&self) -> &[Entry<(Self::Key, Self::Value)>] {
                     self
                 }
-                fn as_mut_slice(&mut self) -> &mut [(Self::Key, Self::Value)] {
+                fn as_mut_slice(&mut self) -> &mut [Entry<(Self::Key, Self::Value)>] {
                     self
                 }
                 #[cfg(feature = "alloc")]
-                fn into_boxed_slice(self) -> Box<[(Self::Key, Self::Value)]> {
+                fn into_boxed_slice(self) -> Box<[Entry<(Self::Key, Self::Value)>]> {
                     Box::new(self)
                 }
             }
