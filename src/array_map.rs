@@ -4,7 +4,7 @@ use core::{
     borrow::Borrow,
     fmt,
     iter::FromIterator,
-    mem::{replace, swap, zeroed},
+    mem::{swap, zeroed},
     ops::Index,
 };
 

@@ -22,6 +22,7 @@ heap if the grow beyond their array's capacity.
 pub mod array_map;
 pub mod array_set;
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 mod test;
 #[cfg(feature = "alloc")]
 pub mod tiny_map;

@@ -126,7 +126,7 @@ where
     ```
     use tinymap::*;
 
-    let set: TinySet<[Entry<i32>; 3]> = [3, 1, 2].iter().copied().collect();
+    let set: ArraySet<[Entry<i32>; 3]> = [3, 1, 2].iter().copied().collect();
     let mut set_iter = set.iter();
     assert_eq!(set_iter.next(), Some(&1));
     assert_eq!(set_iter.next(), Some(&2));
