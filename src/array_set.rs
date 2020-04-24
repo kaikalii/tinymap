@@ -1,6 +1,11 @@
 //! An array-backed, set-like data structure
 
-use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap};
+use core::{
+    borrow::Borrow,
+    fmt,
+    iter::FromIterator,
+    mem::{swap, zeroed},
+};
 
 use crate::Array;
 
@@ -9,19 +14,23 @@ An array-backed, set-like data structure
 
 ArraySet wraps an array of values and supports operation similar to a BTreeSet or HashSet.
 It has a fixed capacity, but it keeps track of how many values have been inserted and removed.
-
-Because this crate uses no unsafe code, value types must implement Default.
 */
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct ArraySet<A> {
     array: A,
     len: usize,
 }
 
-impl<A> ArraySet<A>
-where
-    A: Default,
-{
+impl<A> Default for ArraySet<A> {
+    fn default() -> Self {
+        ArraySet {
+            array: unsafe { zeroed() },
+            len: 0,
+        }
+    }
+}
+
+impl<A> ArraySet<A> {
     /**
     Creates a new empty ArraySet
 
@@ -268,7 +277,7 @@ where
 impl<A> ArraySet<A>
 where
     A: Array,
-    A::Item: Ord + Default,
+    A::Item: Ord,
 {
     /**
     Removes a value from the set. Returns whether the value was present in the set.
@@ -292,7 +301,7 @@ where
     {
         if let Ok(i) = self.find(value) {
             let slice = self.array.as_mut_slice();
-            let mut value = A::Item::default();
+            let mut value = unsafe { zeroed() };
             swap(&mut value, &mut slice[i]);
             for j in (i + 1)..self.len {
                 slice.swap(j - 1, j);
@@ -346,7 +355,7 @@ where
 /// Elements from the iterator beyond the set's capacity will be discarded.
 impl<A> FromIterator<A::Item> for ArraySet<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: Ord,
 {
     fn from_iter<I>(iter: I) -> Self

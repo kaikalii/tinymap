@@ -19,9 +19,19 @@ where
     Heap(BTreeMap<<A::Item as MapEntry>::Key, <A::Item as MapEntry>::Value>),
 }
 
+impl<A> Default for TinyMap<A>
+where
+    A: Array,
+    A::Item: MapEntry,
+{
+    fn default() -> Self {
+        TinyMap::Stack(ArrayMap::default())
+    }
+}
+
 impl<A> TinyMap<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: MapEntry,
 {
     /**
@@ -55,16 +65,6 @@ where
     */
     pub fn clear(&mut self) {
         *self = Self::new();
-    }
-}
-
-impl<A> Default for TinyMap<A>
-where
-    A: Array + Default,
-    A::Item: MapEntry,
-{
-    fn default() -> Self {
-        TinyMap::Stack(ArrayMap::default())
     }
 }
 
@@ -163,7 +163,7 @@ where
 
 impl<A, K, V> TinyMap<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: MapEntry<Key = K, Value = V>,
     K: Ord,
 {
@@ -405,8 +405,7 @@ impl<A, K, V> TinyMap<A>
 where
     A: Array,
     A::Item: MapEntry<Key = K, Value = V>,
-    K: Ord + Default,
-    V: Default,
+    K: Ord,
 {
     /**
     Removes a key from the map, returning the value at the key if the key was previously in the map
@@ -484,7 +483,7 @@ where
 /// Elements from the iterator beyond the map's capacity will be discarded.
 impl<A, K> FromIterator<A::Item> for TinyMap<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: MapEntry<Key = K>,
     K: Ord,
 {

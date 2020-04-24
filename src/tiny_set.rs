@@ -21,7 +21,7 @@ where
 
 impl<A> Default for TinySet<A>
 where
-    A: Array + Default,
+    A: Array,
 {
     fn default() -> Self {
         TinySet::Stack(ArraySet::default())
@@ -30,7 +30,7 @@ where
 
 impl<A> TinySet<A>
 where
-    A: Array + Default,
+    A: Array,
 {
     /**
     Creates a new empty TinySet
@@ -151,7 +151,7 @@ where
 
 impl<A> TinySet<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: Ord,
 {
     /**
@@ -254,7 +254,7 @@ where
 impl<A> TinySet<A>
 where
     A: Array,
-    A::Item: Ord + Default,
+    A::Item: Ord,
 {
     /**
     Removes a value from the set. Returns whether the value was present in the set.
@@ -330,7 +330,7 @@ where
 /// Elements from the iterator beyond the set's capacity will be discarded.
 impl<A> FromIterator<A::Item> for TinySet<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: Ord,
 {
     fn from_iter<I>(iter: I) -> Self

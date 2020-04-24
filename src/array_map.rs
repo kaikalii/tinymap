@@ -9,19 +9,23 @@ An array-backed, map-like data structure
 
 ArrayMap wraps an array of key-value pairs and supports operation similar to a BTreeMap or HashMap.
 It has a fixed capacity, but it keeps track of how many pairs have been inserted and removed.
-
-Because this crate uses no unsafe code, key and value types must both implement Default.
 */
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct ArrayMap<A> {
     array: A,
     len: usize,
 }
 
-impl<A> ArrayMap<A>
-where
-    A: Default,
-{
+impl<A> Default for ArrayMap<A> {
+    fn default() -> Self {
+        ArrayMap {
+            array: unsafe { zeroed() },
+            len: 0,
+        }
+    }
+}
+
+impl<A> ArrayMap<A> {
     /**
     Creates a new empty ArrayMap
 
@@ -410,8 +414,7 @@ impl<A, K, V> ArrayMap<A>
 where
     A: Array,
     A::Item: MapEntry<Key = K, Value = V>,
-    K: Ord + Default,
-    V: Default,
+    K: Ord,
 {
     /**
     Removes a key from the map, returning the value at the key if the key was previously in the map
@@ -434,7 +437,7 @@ where
     {
         if let Ok(i) = self.find(key) {
             let slice = self.array.as_mut_slice();
-            let mut entry = A::Item::new(K::default(), V::default());
+            let mut entry = unsafe { zeroed() };
             swap(&mut entry, &mut slice[i]);
             for j in (i + 1)..self.len {
                 slice.swap(j - 1, j);
@@ -511,7 +514,7 @@ where
 /// Elements from the iterator beyond the map's capacity will be discarded.
 impl<A, K, V> FromIterator<A::Item> for ArrayMap<A>
 where
-    A: Array + Default,
+    A: Array,
     A::Item: MapEntry<Key = K, Value = V>,
     K: Ord,
 {

@@ -8,19 +8,21 @@ This crate provides array-based set and map data structures. These structures
 have a fixed capacity but keep track of how many elements the user has inserted
 and removed.
 
-[`ArrayMap`](struct.ArrayMap.html) is an array-backed map
-[`ArraySet`](struct.ArraySet.html) is an array-backed set
+- [`ArrayMap`](array_map/struct.ArrayMap.html) is an array-backed map
+- [`ArraySet`](array_set/struct.ArraySet.html) is an array-backed set
 
 If the `alloc` feature is enabled (which it is by default), this crate also
 provides variants of these stack-based structures that automatically move to the
 heap if the grow beyond their array's capacity.
 
-[`TinyMap`](struct.TinyMap.html) is an auto-allocating map
-[`TinySet`](struct.TinySet.html) is an auto-allocating set
+- [`TinyMap`](tiny_map/struct.TinyMap.html) is an auto-allocating map
+- [`TinySet`](tiny_set/struct.TinySet.html) is an auto-allocating set
 */
 
 pub mod array_map;
 pub mod array_set;
+#[cfg(test)]
+mod test;
 #[cfg(feature = "alloc")]
 pub mod tiny_map;
 #[cfg(feature = "alloc")]
@@ -33,13 +35,15 @@ pub use tiny_map::TinyMap;
 #[cfg(feature = "alloc")]
 pub use tiny_set::TinySet;
 
+use core::mem::MaybeUninit;
+
 /**
 Create a new ArrayMap with the specified parameters
 
 # Expansion
 
 ```ignore
-arraymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::ArrayMap::<[(KEY_TYPE, VALUE_TYPE); CAPACITY]>::new()
+arraymap!( KEY_TYPE => VALUE_TYPE; CAPACITY ) -> tinymap::ArrayMap::<[Entry<(KEY_TYPE, VALUE_TYPE)>; CAPACITY]>::new()
 ```
 
 # Example
@@ -135,6 +139,9 @@ macro_rules! tinyset {
     };
 }
 
+/// An entry in an array
+pub type Entry<T> = MaybeUninit<T>;
+
 /// Behavior for an entry in a map
 pub trait MapEntry {
     /// The key type
@@ -153,28 +160,34 @@ pub trait MapEntry {
     fn value_mut(&mut self) -> &mut Self::Value;
     /// Get mutable references to the key and value
     fn as_mut_pair(&mut self) -> (&mut Self::Key, &mut Self::Value);
+    /// Drop the entry
+    fn drop(&mut self);
 }
 
-impl<K, V> MapEntry for (K, V) {
+impl<K, V> MapEntry for Entry<(K, V)> {
     type Key = K;
     type Value = V;
     fn new(k: Self::Key, v: Self::Value) -> Self {
-        (k, v)
+        Entry::new((k, v))
     }
     fn into_pair(self) -> (Self::Key, Self::Value) {
-        self
+        unsafe { self.assume_init() }
     }
     fn key(&self) -> &Self::Key {
-        &self.0
+        &unsafe { self.as_ptr().as_ref() }.unwrap().0
     }
     fn value(&self) -> &Self::Value {
-        &self.1
+        &unsafe { self.as_ptr().as_ref() }.unwrap().1
     }
     fn value_mut(&mut self) -> &mut Self::Value {
-        &mut self.1
+        &mut unsafe { self.as_mut_ptr().as_mut() }.unwrap().1
     }
     fn as_mut_pair(&mut self) -> (&mut Self::Key, &mut Self::Value) {
-        (&mut self.0, &mut self.1)
+        let pair = unsafe { self.as_mut_ptr().as_mut() }.unwrap();
+        (&mut pair.0, &mut pair.1)
+    }
+    fn drop(&mut self) {
+        unsafe { self.as_mut_ptr().drop_in_place() }
     }
 }
 
@@ -184,6 +197,7 @@ pub trait Array {
     type Item;
     /// The array's capacity
     const CAPACITY: usize;
+    ///
     /// Get a slice into the array
     fn as_slice(&self) -> &[Self::Item];
     /// Get a mutable slice into the array
