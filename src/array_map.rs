@@ -451,13 +451,6 @@ where
             }
         }
     }
-}
-
-impl<A> ArrayMap<A>
-where
-    A: MapArray,
-    A::Key: Ord,
-{
     /**
     Removes a key from the map, returning the value at the key if the key was previously in the map
 

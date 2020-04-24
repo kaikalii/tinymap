@@ -1,6 +1,185 @@
 use crate as tinymap;
 use tinymap::*;
 
+fn percent_change(a: f64, b: f64) -> f64 {
+    (b - a) / a.abs() * 100.0
+}
+
+const M: usize = 10000;
+
+#[test]
+fn faster_than_hash_map() {
+    use std::collections::HashMap;
+
+    use eggtimer::measure;
+    use rand::{thread_rng, Rng};
+
+    const N: usize = 5;
+    let mut sum = 0;
+    let mut rng = thread_rng();
+    let mut rand = || rng.gen_range(0, N);
+
+    let mut hash_map = HashMap::<usize, usize>::new();
+    let mut hash_map_insert = 0.0;
+    let mut hash_map_get = 0.0;
+    let mut hash_map_remove = 0.0;
+    for _ in 0..M {
+        hash_map_insert += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                hash_map.insert(i, i * 2);
+            }
+        });
+        hash_map_get += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += *hash_map.get(&i).unwrap_or(&0);
+            }
+        });
+        hash_map_remove += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += hash_map.remove(&i).unwrap_or(0);
+            }
+        });
+        hash_map.clear();
+    }
+
+    let mut array_map = arraymap!(usize => usize; N);
+    let mut array_map_insert = 0.0;
+    let mut array_map_get = 0.0;
+    let mut array_map_remove = 0.0;
+    for _ in 0..M {
+        array_map_insert += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                array_map.insert(i, i * 2);
+            }
+        });
+        array_map_get += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += *array_map.get(&i).unwrap_or(&0);
+            }
+        });
+        array_map_remove += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += array_map.remove(&i).unwrap_or(0);
+            }
+        });
+        array_map.clear();
+    }
+
+    println!();
+    println!(" hash_map_insert: {:.05} ms", hash_map_insert * 1000.0);
+    println!("array_map_insert: {:.05} ms", array_map_insert * 1000.0);
+    println!();
+    println!("    hash_map_get: {:.05} ms", hash_map_get * 1000.0);
+    println!("   array_map_get: {:.05} ms", array_map_get * 1000.0);
+    println!();
+    println!(" hash_map_remove: {:.05} ms", hash_map_remove * 1000.0);
+    println!("array_map_remove: {:.05} ms", array_map_remove * 1000.0);
+    println!();
+    println!(
+        "array_map_insert is {:.03} % faster",
+        percent_change(1.0 / hash_map_insert, 1.0 / array_map_insert)
+    );
+    println!(
+        "   array_map_get is {:.03} % faster",
+        percent_change(1.0 / hash_map_get, 1.0 / array_map_get)
+    );
+    println!(
+        "array_map_remove is {:.03} % faster",
+        percent_change(1.0 / hash_map_remove, 1.0 / array_map_remove)
+    );
+    println!();
+
+    assert!(array_map_insert < hash_map_insert);
+    assert!(array_map_get < hash_map_get);
+    assert!(array_map_remove < hash_map_remove);
+}
+
+#[test]
+fn faster_than_btree_map() {
+    use std::collections::BTreeMap;
+
+    use eggtimer::measure;
+    use rand::{thread_rng, Rng};
+
+    const N: usize = 50;
+    let mut sum = 0;
+    let mut rng = thread_rng();
+    let mut rand = || rng.gen_range(0, N);
+
+    let mut btree_map = BTreeMap::<usize, usize>::new();
+    let mut btree_map_insert = 0.0;
+    let mut btree_map_get = 0.0;
+    let mut btree_map_remove = 0.0;
+    for _ in 0..M {
+        btree_map_insert += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                btree_map.insert(i, i * 2);
+            }
+        });
+        btree_map_get += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += *btree_map.get(&i).unwrap_or(&0);
+            }
+        });
+        btree_map_remove += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += btree_map.remove(&i).unwrap_or(0);
+            }
+        });
+        btree_map.clear();
+    }
+
+    let mut array_map = arraymap!(usize => usize; N);
+    let mut array_map_insert = 0.0;
+    let mut array_map_get = 0.0;
+    let mut array_map_remove = 0.0;
+    for _ in 0..M {
+        array_map_insert += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                array_map.insert(i, i * 2);
+            }
+        });
+        array_map_get += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += *array_map.get(&i).unwrap_or(&0);
+            }
+        });
+        array_map_remove += measure(|| {
+            for i in (0..N).map(|_| rand()) {
+                sum += array_map.remove(&i).unwrap_or(0);
+            }
+        });
+        array_map.clear();
+    }
+
+    println!();
+    println!("btree_map_insert: {:.05} ms", btree_map_insert * 1000.0);
+    println!("array_map_insert: {:.05} ms", array_map_insert * 1000.0);
+    println!();
+    println!("   btree_map_get: {:.05} ms", btree_map_get * 1000.0);
+    println!("   array_map_get: {:.05} ms", array_map_get * 1000.0);
+    println!();
+    println!("btree_map_remove: {:.05} ms", btree_map_remove * 1000.0);
+    println!("array_map_remove: {:.05} ms", array_map_remove * 1000.0);
+    println!();
+    println!(
+        "array_map_insert is {:.03} % faster",
+        percent_change(1.0 / btree_map_insert, 1.0 / array_map_insert)
+    );
+    println!(
+        "   array_map_get is {:.03} % faster",
+        percent_change(1.0 / btree_map_get, 1.0 / array_map_get)
+    );
+    println!(
+        "array_map_remove is {:.03} % faster",
+        percent_change(1.0 / btree_map_remove, 1.0 / array_map_remove)
+    );
+    println!();
+
+    assert!(array_map_insert < btree_map_insert);
+    assert!(array_map_remove < btree_map_remove);
+}
+
 #[test]
 fn drop_map() {
     use std::sync::{
