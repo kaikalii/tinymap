@@ -63,12 +63,6 @@ where
     pub fn clear(&mut self) {
         *self = Self::new();
     }
-}
-
-impl<A> TinyMap<A>
-where
-    A: MapArray,
-{
     /**
     Returns the number of elements in the map
 
@@ -106,12 +100,6 @@ where
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-}
-
-impl<A> TinyMap<A>
-where
-    A: MapArray,
-{
     /**
     Returns the maximum number of elements the map can contain on the stack
 
@@ -205,14 +193,6 @@ where
             TinyMap::Heap(map) => map.insert(key, value),
         }
     }
-}
-
-impl<A> TinyMap<A>
-where
-    A: MapArray,
-
-    A::Key: Ord,
-{
     /**
     Returns a reference to the value corresponding to the key
 
@@ -237,13 +217,6 @@ where
             TinyMap::Heap(map) => map.get(key),
         }
     }
-}
-
-impl<A> TinyMap<A>
-where
-    A: MapArray,
-    A::Key: Ord,
-{
     /**
     Returns true if the map contains a value for the specified key
 
@@ -392,13 +365,6 @@ where
             TinyMap::Heap(map) => ValuesMut::Heap(map.values_mut()),
         }
     }
-}
-
-impl<A> TinyMap<A>
-where
-    A: MapArray,
-    A::Key: Ord,
-{
     /**
     Removes a key from the map, returning the value at the key if the key was previously in the map
 

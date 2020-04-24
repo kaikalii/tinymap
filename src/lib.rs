@@ -35,7 +35,7 @@ pub use tiny_map::TinyMap;
 #[cfg(feature = "alloc")]
 pub use tiny_set::TinySet;
 
-use core::mem::{zeroed, MaybeUninit};
+use core::mem::MaybeUninit;
 
 /**
 Create a new ArrayMap with the specified parameters
@@ -165,8 +165,6 @@ pub trait MapArray {
     type Value;
     /// The array's capacity
     const CAPACITY: usize;
-    /// Get an uninitialized version of the array
-    fn uninitialized() -> Self;
     /// Get a slice into the array
     fn as_slice(&self) -> &[Entry<(Self::Key, Self::Value)>];
     /// Get a mutable slice into the array
@@ -197,9 +195,6 @@ macro_rules! impl_array {
                 type Key = K;
                 type Value = V;
                 const CAPACITY: usize = $n;
-                fn uninitialized() -> Self {
-                    unsafe { zeroed() }
-                }
                 fn as_slice(&self) -> &[Entry<(Self::Key, Self::Value)>] {
                     self
                 }

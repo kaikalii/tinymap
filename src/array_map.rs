@@ -1,6 +1,12 @@
 //! An array-backed, map-like data structure
 
-use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
+use core::{
+    borrow::Borrow,
+    fmt,
+    iter::FromIterator,
+    mem::{replace, swap, zeroed},
+    ops::Index,
+};
 
 use crate::{Entry, MapArray};
 
@@ -10,8 +16,11 @@ An array-backed, map-like data structure
 ArrayMap wraps an array of key-value pairs and supports operation similar to a BTreeMap or HashMap.
 It has a fixed capacity, but it keeps track of how many pairs have been inserted and removed.
 */
-#[derive(Clone, Copy)]
-pub struct ArrayMap<A> {
+#[derive(Clone)]
+pub struct ArrayMap<A>
+where
+    A: MapArray,
+{
     array: A,
     len: usize,
 }
@@ -22,13 +31,16 @@ where
 {
     fn default() -> Self {
         ArrayMap {
-            array: A::uninitialized(),
+            array: unsafe { zeroed() },
             len: 0,
         }
     }
 }
 
-impl<A> ArrayMap<A> {
+impl<A> ArrayMap<A>
+where
+    A: MapArray,
+{
     /**
     Returns the number of elements in the map
 
@@ -43,7 +55,7 @@ impl<A> ArrayMap<A> {
     assert_eq!(a.len(), 1);
     ```
     */
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.len
     }
     /**
@@ -60,15 +72,9 @@ impl<A> ArrayMap<A> {
     assert!(!a.is_empty());
     ```
     */
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.len == 0
     }
-}
-
-impl<A> ArrayMap<A>
-where
-    A: MapArray,
-{
     /**
     Creates a new empty ArrayMap
 
@@ -330,6 +336,39 @@ where
 
 impl<A> ArrayMap<A>
 where
+    A: MapArray + Copy,
+{
+    /**
+    Get a copy of this map
+
+    Because of the way its internals work, ArrayMap must implement `Drop`, so it cannot implement `Copy`.
+
+    However, that does not make a copy any less trivial with the right array type, hence this function.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Entry<(&str, i32)>; 10]>::new();
+    map.insert("a", 1);
+    map.insert("b", 2);
+    map.insert("c", 3);
+
+    let copy = map.copy();
+    assert_eq!(3, copy.len());
+    ```
+    */
+    pub fn copy(&self) -> Self {
+        ArrayMap {
+            array: self.array,
+            len: self.len,
+        }
+    }
+}
+
+impl<A> ArrayMap<A>
+where
     A: MapArray,
     A::Key: Ord,
 {
@@ -505,9 +544,10 @@ where
 {
     type Item = (A::Key, A::Value);
     type IntoIter = IntoIter<A>;
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(mut self) -> Self::IntoIter {
+        let array = replace(&mut self.array, unsafe { zeroed() });
         IntoIter {
-            iter: self.array.into_boxed_slice().into_vec().into_iter(),
+            iter: array.into_boxed_slice().into_vec().into_iter(),
         }
     }
 }
@@ -527,6 +567,19 @@ where
             map.insert(key, value);
         }
         map
+    }
+}
+
+impl<A> Drop for ArrayMap<A>
+where
+    A: MapArray,
+{
+    fn drop(&mut self) {
+        for i in 0..self.len {
+            unsafe {
+                self.array.as_mut_slice()[i].as_mut_ptr().drop_in_place();
+            }
+        }
     }
 }
 

@@ -61,12 +61,6 @@ where
     pub fn clear(&mut self) {
         *self = Self::new();
     }
-}
-
-impl<A> TinySet<A>
-where
-    A: Array,
-{
     /**
     Returns the number of elements in the set
 
@@ -104,12 +98,6 @@ where
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-}
-
-impl<A> TinySet<A>
-where
-    A: Array,
-{
     /**
     Returns the maximum number of elements the set can contain
 
@@ -196,13 +184,6 @@ where
             TinySet::Heap(set) => set.insert(value),
         }
     }
-}
-
-impl<A> TinySet<A>
-where
-    A: Array,
-    A::Item: Ord,
-{
     /**
     Returns true if the set contains a value for the specified value
 
@@ -249,13 +230,6 @@ where
             TinySet::Heap(set) => set.get(value),
         }
     }
-}
-
-impl<A> TinySet<A>
-where
-    A: Array,
-    A::Item: Ord,
-{
     /**
     Removes a value from the set. Returns whether the value was present in the set.
 
