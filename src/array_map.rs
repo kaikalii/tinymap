@@ -545,7 +545,7 @@ where
     type Item = (A::Key, A::Value);
     type IntoIter = IntoIter<A>;
     fn into_iter(mut self) -> Self::IntoIter {
-        let array = replace(&mut self.array, unsafe { zeroed() });
+        let array = core::mem::replace(&mut self.array, unsafe { zeroed() });
         IntoIter {
             iter: array.into_boxed_slice().into_vec().into_iter(),
         }

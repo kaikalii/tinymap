@@ -286,6 +286,15 @@ where
     }
 }
 
+impl<A> From<BTreeSet<A::Item>> for TinySet<A>
+where
+    A: Array,
+{
+    fn from(set: BTreeSet<A::Item>) -> Self {
+        TinySet::Heap(set)
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<A> IntoIterator for TinySet<A>
 where

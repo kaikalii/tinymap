@@ -14,7 +14,7 @@ where
 {
     /// An map with items on the stack
     Stack(ArrayMap<A>),
-    /// A map with items in the heap
+    /// A map with items on the heap
     Heap(BTreeMap<A::Key, A::Value>),
 }
 
@@ -421,6 +421,15 @@ where
 {
     fn from(map: ArrayMap<A>) -> Self {
         TinyMap::Stack(map)
+    }
+}
+
+impl<A> From<BTreeMap<A::Key, A::Value>> for TinyMap<A>
+where
+    A: MapArray,
+{
+    fn from(map: BTreeMap<A::Key, A::Value>) -> Self {
+        TinyMap::Heap(map)
     }
 }
 

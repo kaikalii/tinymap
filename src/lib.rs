@@ -13,10 +13,41 @@ and removed.
 
 If the `alloc` feature is enabled (which it is by default), this crate also
 provides variants of these stack-based structures that automatically move to the
-heap if the grow beyond their array's capacity.
+heap if they grow beyond their array's capacity.
 
-- [`TinyMap`](tiny_map/struct.TinyMap.html) is an auto-allocating map
-- [`TinySet`](tiny_set/struct.TinySet.html) is an auto-allocating set
+- [`TinyMap`](tiny_map/enum.TinyMap.html) is an auto-allocating map
+- [`TinySet`](tiny_set/enum.TinySet.html) is an auto-allocating set
+
+# Array Types
+
+The underlying arrays for ArrayMap and ArraySet are of a special kind where the
+items are wrapped in an [`Entry`](type.Entry.html). The reasons for this are related
+to performance. Suffice it to say, without this requirement, many more ArrayMap and
+ArraySet functions would require that their items implement `Default` and would be
+less efficient.
+
+- Arrays for ArraySets must implement [`Array`](trait.Array.html).
+- Arrays for ArrayMap must implement [`MapArray`](trait.MapArray.html).
+
+These traits are implemented both for `[Entry<T>; N]` for all `T` and for `N` up to 50.
+
+# Macros
+
+Until [const generics](https://github.com/rust-lang/rfcs/blob/master/text/2000-const-generics.md)
+are available on stable, the type signatures for types from this crate will be quite ugly.
+
+Creating a new ArrayMap of `i32`s to `&str`s with a capacity of 10 looks like this:
+```
+# use tinymap::*;
+let map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+```
+
+Because of this verbosity, this crate provides a macro for each container type to easily
+create one with the desired type. For example, with the `arraymap!` macro, the above code becomes:
+```
+# use tinymap::*;
+let map = arraymap!(i32 => &str; 10);
+```
 */
 
 pub mod array_map;
@@ -89,7 +120,7 @@ macro_rules! arrayset {
 }
 
 /**
-Create a new ArrayMap with the specified parameters
+Create a new TinyMap with the specified parameters
 
 # Expansion
 
