@@ -27,9 +27,9 @@ ArraySet functions would require that their items implement `Default` and would 
 less efficient.
 
 - Arrays for ArraySets must implement [`Array`](trait.Array.html).
+    - Implemented for `[Entry<T>; N]` for all `T` and for `N` up to 50
 - Arrays for ArrayMap must implement [`MapArray`](trait.MapArray.html).
-
-These traits are implemented both for `[Entry<T>; N]` for all `T` and for `N` up to 50.
+    - Implemented for `[Entry<(K, V)>; N]` for all `K` and `V` and for `N` up to 50
 
 # Macros
 
