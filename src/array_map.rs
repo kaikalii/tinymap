@@ -4,7 +4,7 @@ use core::{
     borrow::Borrow,
     fmt,
     iter::FromIterator,
-    mem::{swap, zeroed},
+    mem::{replace, swap, zeroed},
     ops::Index,
 };
 
@@ -466,6 +466,16 @@ where
             }
         }
     }
+    fn remove_index(&mut self, i: usize) -> (A::Key, A::Value) {
+        let slice = self.array.as_mut_slice();
+        let mut entry = Entry::uninit();
+        swap(&mut entry, &mut slice[i]);
+        for j in (i + 1)..self.len {
+            slice.swap(j - 1, j);
+        }
+        self.len -= 1;
+        unsafe { entry.assume_init() }
+    }
     /**
     Removes a key from the map, returning the value at the key if the key was previously in the map
 
@@ -486,14 +496,7 @@ where
         Q: Ord,
     {
         if let Ok(i) = self.find(key) {
-            let slice = self.array.as_mut_slice();
-            let mut entry = Entry::uninit();
-            swap(&mut entry, &mut slice[i]);
-            for j in (i + 1)..self.len {
-                slice.swap(j - 1, j);
-            }
-            self.len -= 1;
-            Some(unsafe { entry.assume_init() }.1)
+            Some(self.remove_index(i).1)
         } else {
             None
         }
@@ -728,5 +731,73 @@ where
         self.iter
             .next()
             .map(|entry| &mut unsafe { entry.as_mut_ptr().as_mut() }.unwrap().1)
+    }
+}
+
+/// An entry in an ArrayMap that is vacant
+pub struct VacantEntry<'a, A>
+where
+    A: MapArray,
+{
+    map: &'a mut ArrayMap<A>,
+    index: usize,
+}
+
+impl<'a, A> VacantEntry<'a, A>
+where
+    A: MapArray + 'a,
+    A::Key: Ord,
+{
+}
+
+/// An entry in an ArrayMap that is occupied
+pub struct OccupiedEntry<'a, A>
+where
+    A: MapArray,
+{
+    map: &'a mut ArrayMap<A>,
+    index: usize,
+}
+
+impl<'a, A> OccupiedEntry<'a, A>
+where
+    A: MapArray + 'a,
+    A::Key: Ord,
+{
+    fn entry(&self) -> &Entry<(A::Key, A::Value)> {
+        &self.map.array.as_slice()[self.index]
+    }
+    fn entry_mut(&mut self) -> &mut Entry<(A::Key, A::Value)> {
+        &mut self.map.array.as_mut_slice()[self.index]
+    }
+    /// Gets a reference to the key in the entry
+    pub fn key(&self) -> &A::Key {
+        &unsafe { self.entry().as_ptr().as_ref() }.unwrap().0
+    }
+    /// Gets a reference to the value in the entry
+    pub fn get(&self) -> &A::Value {
+        &unsafe { self.entry().as_ptr().as_ref() }.unwrap().1
+    }
+    /// Gets a mutable reference to the value in the entry
+    pub fn get_mut(&mut self) -> &mut A::Value {
+        &mut unsafe { self.entry_mut().as_mut_ptr().as_mut() }.unwrap().1
+    }
+    /// Sets the value of the entry and returns the entry's old value.
+    pub fn insert(&mut self, value: A::Value) -> A::Value {
+        replace(self.get_mut(), value)
+    }
+    /// Converts the entry into a mutable reference to its value.
+    pub fn into_mut(mut self) -> &'a mut A::Value {
+        unsafe { self.entry_mut().as_mut_ptr().as_mut() }
+            .map(|(_, v)| v)
+            .unwrap()
+    }
+    /// Takes the value of the entry out of the map, and returns it.
+    pub fn remove(self) -> A::Value {
+        self.remove_entry().1
+    }
+    /// Takes the key-value pair of the entry out of the map, and returns it.
+    pub fn remove_entry(self) -> (A::Key, A::Value) {
+        self.map.remove_index(self.index)
     }
 }
