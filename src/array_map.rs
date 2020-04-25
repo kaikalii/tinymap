@@ -248,7 +248,7 @@ where
     assert_eq!((*first_key, *first_value), (1, "a"));
     ```
     */
-    pub fn iter(&self) -> Iter<'_, A> {
+    pub fn iter(&self) -> Iter<'_, A::Key, A::Value> {
         Iter {
             iter: self.array.as_slice()[..self.len].iter(),
         }
@@ -274,7 +274,7 @@ where
     }
     ```
     */
-    pub fn iter_mut(&mut self) -> IterMut<'_, A> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, A::Key, A::Value> {
         IterMut {
             iter: self.array.as_mut_slice()[..self.len].iter_mut(),
         }
@@ -295,7 +295,7 @@ where
     assert_eq!(keys, [1, 2]);
     ```
     */
-    pub fn keys(&self) -> Keys<'_, A> {
+    pub fn keys(&self) -> Keys<'_, A::Key, A::Value> {
         Keys {
             iter: self.array.as_slice()[..self.len].iter(),
         }
@@ -316,7 +316,7 @@ where
     assert_eq!(values, ["hello", "goodbye"]);
     ```
     */
-    pub fn values(&self) -> Values<'_, A> {
+    pub fn values(&self) -> Values<'_, A::Key, A::Value> {
         Values {
             iter: self.array.as_slice()[..self.len].iter(),
         }
@@ -342,7 +342,7 @@ where
                         String::from("goodbye!")]);
     ```
     */
-    pub fn values_mut(&mut self) -> ValuesMut<'_, A> {
+    pub fn values_mut(&mut self) -> ValuesMut<'_, A::Key, A::Value> {
         ValuesMut {
             iter: self.array.as_mut_slice()[..self.len].iter_mut(),
         }
@@ -569,7 +569,7 @@ where
     A: MapArray,
 {
     type Item = (&'a A::Key, &'a A::Value);
-    type IntoIter = Iter<'a, A>;
+    type IntoIter = Iter<'a, A::Key, A::Value>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -580,7 +580,7 @@ where
     A: MapArray,
 {
     type Item = (&'a A::Key, &'a mut A::Value);
-    type IntoIter = IterMut<'a, A>;
+    type IntoIter = IterMut<'a, A::Key, A::Value>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
     }
@@ -592,7 +592,7 @@ where
     A: MapArray,
 {
     type Item = (A::Key, A::Value);
-    type IntoIter = IntoIter<A>;
+    type IntoIter = IntoIter<A::Key, A::Value>;
     fn into_iter(mut self) -> Self::IntoIter {
         let array = core::mem::replace(&mut self.array, unsafe { zeroed() });
         IntoIter {
@@ -634,37 +634,25 @@ where
 
 /// An consuming iterator over the key-value pairs in an ArrayMap
 #[cfg(feature = "alloc")]
-pub struct IntoIter<A>
-where
-    A: MapArray,
-{
-    iter: std::vec::IntoIter<Entry<(A::Key, A::Value)>>,
+pub struct IntoIter<K, V> {
+    iter: std::vec::IntoIter<Entry<(K, V)>>,
 }
 
 #[cfg(feature = "alloc")]
-impl<A> Iterator for IntoIter<A>
-where
-    A: MapArray,
-{
-    type Item = (A::Key, A::Value);
+impl<K, V> Iterator for IntoIter<K, V> {
+    type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|entry| unsafe { entry.assume_init() })
     }
 }
 
 /// An iterator over references to the key-value pairs in an ArrayMap
-pub struct Iter<'a, A>
-where
-    A: MapArray,
-{
-    iter: core::slice::Iter<'a, Entry<(A::Key, A::Value)>>,
+pub struct Iter<'a, K, V> {
+    iter: core::slice::Iter<'a, Entry<(K, V)>>,
 }
 
-impl<'a, A> Iterator for Iter<'a, A>
-where
-    A: MapArray,
-{
-    type Item = (&'a A::Key, &'a A::Value);
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type Item = (&'a K, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|entry| {
             let pair = unsafe { entry.as_ptr().as_ref() }.unwrap();
@@ -674,20 +662,16 @@ where
 }
 
 /// An iterator over references to keys and mutable references to values in an ArrayMap
-pub struct IterMut<'a, A>
-where
-    A: MapArray,
-{
-    iter: core::slice::IterMut<'a, Entry<(A::Key, A::Value)>>,
+pub struct IterMut<'a, K, V> {
+    iter: core::slice::IterMut<'a, Entry<(K, V)>>,
 }
 
-impl<'a, A> Iterator for IterMut<'a, A>
+impl<'a, K, V> Iterator for IterMut<'a, K, V>
 where
-    A: MapArray,
-    A::Key: 'a,
-    A::Value: 'a,
+    K: 'a,
+    V: 'a,
 {
-    type Item = (&'a A::Key, &'a mut A::Value);
+    type Item = (&'a K, &'a mut V);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|entry| {
             let pair = unsafe { entry.as_mut_ptr().as_mut() }.unwrap();
@@ -697,19 +681,15 @@ where
 }
 
 /// An iterator over references to the keys in an ArrayMap
-pub struct Keys<'a, A>
-where
-    A: MapArray,
-{
-    iter: core::slice::Iter<'a, Entry<(A::Key, A::Value)>>,
+pub struct Keys<'a, K, V> {
+    iter: core::slice::Iter<'a, Entry<(K, V)>>,
 }
 
-impl<'a, A> Iterator for Keys<'a, A>
+impl<'a, K, V> Iterator for Keys<'a, K, V>
 where
-    A: MapArray,
-    A::Key: 'a,
+    K: 'a,
 {
-    type Item = &'a A::Key;
+    type Item = &'a K;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
@@ -718,19 +698,15 @@ where
 }
 
 /// An iterator over references to the values in an ArrayMap
-pub struct Values<'a, A>
-where
-    A: MapArray,
-{
-    iter: core::slice::Iter<'a, Entry<(A::Key, A::Value)>>,
+pub struct Values<'a, K, V> {
+    iter: core::slice::Iter<'a, Entry<(K, V)>>,
 }
 
-impl<'a, A> Iterator for Values<'a, A>
+impl<'a, K, V> Iterator for Values<'a, K, V>
 where
-    A: MapArray,
-    A::Value: 'a,
+    V: 'a,
 {
-    type Item = &'a A::Value;
+    type Item = &'a V;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
@@ -739,19 +715,15 @@ where
 }
 
 /// An iterator over mutable references to the values in an ArrayMap
-pub struct ValuesMut<'a, A>
-where
-    A: MapArray,
-{
-    iter: core::slice::IterMut<'a, Entry<(A::Key, A::Value)>>,
+pub struct ValuesMut<'a, K, V> {
+    iter: core::slice::IterMut<'a, Entry<(K, V)>>,
 }
 
-impl<'a, A> Iterator for ValuesMut<'a, A>
+impl<'a, K, V> Iterator for ValuesMut<'a, K, V>
 where
-    A: MapArray,
-    A::Value: 'a,
+    V: 'a,
 {
-    type Item = &'a mut A::Value;
+    type Item = &'a mut V;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()

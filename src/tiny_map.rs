@@ -150,7 +150,7 @@ where
     assert_eq!((*first_key, *first_value), (1, "a"));
     ```
     */
-    pub fn iter(&self) -> Iter<'_, A> {
+    pub fn iter(&self) -> Iter<'_, A::Key, A::Value> {
         match self {
             TinyMap::Stack(map) => Iter::Stack(map.iter()),
             TinyMap::Heap(map) => Iter::Heap(map.iter()),
@@ -302,7 +302,7 @@ where
     }
     ```
     */
-    pub fn iter_mut(&mut self) -> IterMut<'_, A> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, A::Key, A::Value> {
         match self {
             TinyMap::Stack(map) => IterMut::Stack(map.iter_mut()),
             TinyMap::Heap(map) => IterMut::Heap(map.iter_mut()),
@@ -324,7 +324,7 @@ where
     assert_eq!(keys, [1, 2]);
     ```
     */
-    pub fn keys(&self) -> Keys<'_, A> {
+    pub fn keys(&self) -> Keys<'_, A::Key, A::Value> {
         match self {
             TinyMap::Stack(map) => Keys::Stack(map.keys()),
             TinyMap::Heap(map) => Keys::Heap(map.keys()),
@@ -346,7 +346,7 @@ where
     assert_eq!(values, ["hello", "goodbye"]);
     ```
     */
-    pub fn values(&self) -> Values<'_, A> {
+    pub fn values(&self) -> Values<'_, A::Key, A::Value> {
         match self {
             TinyMap::Stack(map) => Values::Stack(map.values()),
             TinyMap::Heap(map) => Values::Heap(map.values()),
@@ -373,7 +373,7 @@ where
                         String::from("goodbye!")]);
     ```
     */
-    pub fn values_mut(&mut self) -> ValuesMut<'_, A> {
+    pub fn values_mut(&mut self) -> ValuesMut<'_, A::Key, A::Value> {
         match self {
             TinyMap::Stack(map) => ValuesMut::Stack(map.values_mut()),
             TinyMap::Heap(map) => ValuesMut::Heap(map.values_mut()),
@@ -481,7 +481,7 @@ where
     A: MapArray,
 {
     type Item = (&'a A::Key, &'a A::Value);
-    type IntoIter = Iter<'a, A>;
+    type IntoIter = Iter<'a, A::Key, A::Value>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -493,7 +493,7 @@ where
     A::Key: Ord,
 {
     type Item = (&'a A::Key, &'a mut A::Value);
-    type IntoIter = IterMut<'a, A>;
+    type IntoIter = IterMut<'a, A::Key, A::Value>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
     }
@@ -505,7 +505,7 @@ where
     A: MapArray,
 {
     type Item = (A::Key, A::Value);
-    type IntoIter = IntoIter<A>;
+    type IntoIter = IntoIter<A::Key, A::Value>;
     fn into_iter(self) -> Self::IntoIter {
         match self {
             TinyMap::Stack(map) => IntoIter::Stack(map.into_iter()),
@@ -533,21 +533,15 @@ where
 }
 
 /// An consuming iterator over the values in an ArraySet
-pub enum IntoIter<A>
-where
-    A: MapArray,
-{
+pub enum IntoIter<K, V> {
     #[doc(hidden)]
-    Stack(crate::array_map::IntoIter<A>),
+    Stack(crate::array_map::IntoIter<K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::IntoIter<A::Key, A::Value>),
+    Heap(std::collections::btree_map::IntoIter<K, V>),
 }
 
-impl<A> Iterator for IntoIter<A>
-where
-    A: MapArray,
-{
-    type Item = (A::Key, A::Value);
+impl<K, V> Iterator for IntoIter<K, V> {
+    type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             IntoIter::Stack(iter) => iter.next(),
@@ -557,23 +551,19 @@ where
 }
 
 /// An iterator over references to the key-value pairs in an TinyMap
-pub enum Iter<'a, A>
-where
-    A: MapArray,
-{
+pub enum Iter<'a, K, V> {
     #[doc(hidden)]
-    Stack(crate::array_map::Iter<'a, A>),
+    Stack(crate::array_map::Iter<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::Iter<'a, A::Key, A::Value>),
+    Heap(std::collections::btree_map::Iter<'a, K, V>),
 }
 
-impl<'a, A> Iterator for Iter<'a, A>
+impl<'a, K, V> Iterator for Iter<'a, K, V>
 where
-    A: MapArray,
-    A::Key: 'a,
-    A::Value: 'a,
+    K: 'a,
+    V: 'a,
 {
-    type Item = (&'a A::Key, &'a A::Value);
+    type Item = (&'a K, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Iter::Stack(iter) => iter.next(),
@@ -583,23 +573,19 @@ where
 }
 
 /// An iterator over references to keys and mutable references to values in an TinyMap
-pub enum IterMut<'a, A>
-where
-    A: MapArray,
-{
+pub enum IterMut<'a, K, V> {
     #[doc(hidden)]
-    Stack(crate::array_map::IterMut<'a, A>),
+    Stack(crate::array_map::IterMut<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::IterMut<'a, A::Key, A::Value>),
+    Heap(std::collections::btree_map::IterMut<'a, K, V>),
 }
 
-impl<'a, A> Iterator for IterMut<'a, A>
+impl<'a, K, V> Iterator for IterMut<'a, K, V>
 where
-    A: MapArray,
-    A::Key: 'a,
-    A::Value: 'a,
+    K: 'a,
+    V: 'a,
 {
-    type Item = (&'a A::Key, &'a mut A::Value);
+    type Item = (&'a K, &'a mut V);
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             IterMut::Stack(iter) => iter.next(),
@@ -609,22 +595,18 @@ where
 }
 
 /// An iterator over references to the keys in an TinyMap
-pub enum Keys<'a, A>
-where
-    A: MapArray,
-{
+pub enum Keys<'a, K, V> {
     #[doc(hidden)]
-    Stack(crate::array_map::Keys<'a, A>),
+    Stack(crate::array_map::Keys<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::Keys<'a, A::Key, A::Value>),
+    Heap(std::collections::btree_map::Keys<'a, K, V>),
 }
 
-impl<'a, A> Iterator for Keys<'a, A>
+impl<'a, K, V> Iterator for Keys<'a, K, V>
 where
-    A: MapArray,
-    A::Key: 'a,
+    K: 'a,
 {
-    type Item = &'a A::Key;
+    type Item = &'a K;
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Keys::Stack(iter) => iter.next(),
@@ -634,22 +616,18 @@ where
 }
 
 /// An iterator over references to the values in an TinyMap
-pub enum Values<'a, A>
-where
-    A: MapArray,
-{
+pub enum Values<'a, K, V> {
     #[doc(hidden)]
-    Stack(crate::array_map::Values<'a, A>),
+    Stack(crate::array_map::Values<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::Values<'a, A::Key, A::Value>),
+    Heap(std::collections::btree_map::Values<'a, K, V>),
 }
 
-impl<'a, A> Iterator for Values<'a, A>
+impl<'a, K, V> Iterator for Values<'a, K, V>
 where
-    A: MapArray,
-    A::Value: 'a,
+    V: 'a,
 {
-    type Item = &'a A::Value;
+    type Item = &'a V;
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Values::Stack(iter) => iter.next(),
@@ -659,22 +637,18 @@ where
 }
 
 /// An iterator over mutable references to the values in an TinyMap
-pub enum ValuesMut<'a, A>
-where
-    A: MapArray,
-{
+pub enum ValuesMut<'a, K, V> {
     #[doc(hidden)]
-    Stack(crate::array_map::ValuesMut<'a, A>),
+    Stack(crate::array_map::ValuesMut<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::ValuesMut<'a, A::Key, A::Value>),
+    Heap(std::collections::btree_map::ValuesMut<'a, K, V>),
 }
 
-impl<'a, A> Iterator for ValuesMut<'a, A>
+impl<'a, K, V> Iterator for ValuesMut<'a, K, V>
 where
-    A: MapArray,
-    A::Value: 'a,
+    V: 'a,
 {
-    type Item = &'a mut A::Value;
+    type Item = &'a mut V;
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             ValuesMut::Stack(iter) => iter.next(),
