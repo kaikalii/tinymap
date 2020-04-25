@@ -8,16 +8,8 @@ documentation = 'https://docs.rs/tinymap'
 repository = 'https://github.com/kaikalii/tinymap'
 readme = 'readme.md'
 license = 'MIT'
-keywords = [
-    'hash',
-    'map',
-    'set',
-    'array',
-]
-categories = [
-    'data-structures',
-    'no-std',
-]
+keywords = ['hash', 'map', 'set', 'array']
+categories = ['data-structures', 'no-std']
 
 [features]
 alloc = []
@@ -27,11 +19,13 @@ default = ['alloc']
 version = '1.0.106'
 optional = true
 
+[package.metadata.docs.rs]
+features = ['serde']
+
 [dev-dependencies]
 criterion = '0.3'
 rand = '0.7.3'
 serde_yaml = '0.8.11'
-
 
 [[bench]]
 harness = false
