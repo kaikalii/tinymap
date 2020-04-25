@@ -364,6 +364,34 @@ where
     }
 }
 
+impl<A> PartialEq for ArraySet<A>
+where
+    A: Array,
+    A::Item: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<A> Eq for ArraySet<A>
+where
+    A: Array,
+    A::Item: Eq,
+{
+}
+
+impl<'a, A> IntoIterator for &'a ArraySet<A>
+where
+    A: Array,
+{
+    type Item = &'a A::Item;
+    type IntoIter = Iter<'a, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<A> IntoIterator for ArraySet<A>
 where

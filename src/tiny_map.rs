@@ -443,6 +443,48 @@ where
     }
 }
 
+impl<A> PartialEq for TinyMap<A>
+where
+    A: MapArray,
+    A::Key: PartialEq,
+    A::Value: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<A> Eq for TinyMap<A>
+where
+    A: MapArray,
+    A::Key: Eq,
+    A::Value: Eq,
+{
+}
+
+impl<'a, A> IntoIterator for &'a TinyMap<A>
+where
+    A: MapArray,
+{
+    type Item = (&'a A::Key, &'a A::Value);
+    type IntoIter = Iter<'a, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, A> IntoIterator for &'a mut TinyMap<A>
+where
+    A: MapArray,
+    A::Key: Ord,
+{
+    type Item = (&'a A::Key, &'a mut A::Value);
+    type IntoIter = IterMut<'a, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<A> IntoIterator for TinyMap<A>
 where

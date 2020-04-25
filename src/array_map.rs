@@ -530,6 +530,47 @@ where
     }
 }
 
+impl<A> PartialEq for ArrayMap<A>
+where
+    A: MapArray,
+    A::Key: PartialEq,
+    A::Value: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<A> Eq for ArrayMap<A>
+where
+    A: MapArray,
+    A::Key: Eq,
+    A::Value: Eq,
+{
+}
+
+impl<'a, A> IntoIterator for &'a ArrayMap<A>
+where
+    A: MapArray,
+{
+    type Item = (&'a A::Key, &'a A::Value);
+    type IntoIter = Iter<'a, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, A> IntoIterator for &'a mut ArrayMap<A>
+where
+    A: MapArray,
+{
+    type Item = (&'a A::Key, &'a mut A::Value);
+    type IntoIter = IterMut<'a, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<A> IntoIterator for ArrayMap<A>
 where

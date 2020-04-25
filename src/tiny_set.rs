@@ -295,6 +295,34 @@ where
     }
 }
 
+impl<A> PartialEq for TinySet<A>
+where
+    A: Array,
+    A::Item: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<A> Eq for TinySet<A>
+where
+    A: Array,
+    A::Item: Eq,
+{
+}
+
+impl<'a, A> IntoIterator for &'a TinySet<A>
+where
+    A: Array,
+{
+    type Item = &'a A::Item;
+    type IntoIter = Iter<'a, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<A> IntoIterator for TinySet<A>
 where

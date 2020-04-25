@@ -48,10 +48,17 @@ create one with the desired type. For example, with the `arraymap!` macro, the a
 # use tinymap::*;
 let map = arraymap!(i32 => &str; 10);
 ```
+
+# Serialization
+
+Serde serialization and deserialization for the data structures in this crate can be enabled
+with the `serde` feature.
 */
 
 pub mod array_map;
 pub mod array_set;
+#[cfg(feature = "serde")]
+mod serialize;
 #[cfg(test)]
 #[cfg(feature = "alloc")]
 mod test;

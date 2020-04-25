@@ -103,3 +103,47 @@ fn drop_set() {
 
     assert_eq!(5, counter.load(Ordering::Relaxed));
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn array_map_serialization() {
+    let mut map = arraymap!(i32 => i32; 5);
+    for i in 0..5 {
+        map.insert(i, i * 2);
+    }
+    let ser = serde_yaml::to_string(&map).unwrap();
+    assert_eq!(map, serde_yaml::from_str(&ser).unwrap());
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn tiny_map_serialization() {
+    let mut map = tinymap!(i32 => i32; 5);
+    for i in 0..5 {
+        map.insert(i, i * 2);
+    }
+    let ser = serde_yaml::to_string(&map).unwrap();
+    assert_eq!(map, serde_yaml::from_str(&ser).unwrap());
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn array_set_serialization() {
+    let mut set = arrayset!(i32; 5);
+    for i in 0..5 {
+        set.insert(i);
+    }
+    let ser = serde_yaml::to_string(&set).unwrap();
+    assert_eq!(set, serde_yaml::from_str(&ser).unwrap());
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn tiny_set_serialization() {
+    let mut set = tinyset!(i32; 5);
+    for i in 0..5 {
+        set.insert(i);
+    }
+    let ser = serde_yaml::to_string(&set).unwrap();
+    assert_eq!(set, serde_yaml::from_str(&ser).unwrap());
+}
