@@ -8,7 +8,6 @@ use crate::{Array, ArraySet};
 /**
 A set that starts on the stack but can automatically move to the heap
 */
-#[derive(Clone)]
 pub enum TinySet<A>
 where
     A: Array,
@@ -25,6 +24,19 @@ where
 {
     fn default() -> Self {
         TinySet::Stack(ArraySet::default())
+    }
+}
+
+impl<A> Clone for TinySet<A>
+where
+    A: Array,
+    A::Item: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            TinySet::Stack(set) => TinySet::Stack(set.clone()),
+            TinySet::Heap(set) => TinySet::Heap(set.clone()),
+        }
     }
 }
 

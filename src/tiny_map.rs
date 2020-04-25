@@ -8,7 +8,6 @@ use crate::{ArrayMap, MapArray};
 /**
 A map that starts on the stack but can automatically move to the heap
 */
-#[derive(Clone)]
 pub enum TinyMap<A>
 where
     A: MapArray,
@@ -25,6 +24,20 @@ where
 {
     fn default() -> Self {
         TinyMap::Stack(ArrayMap::default())
+    }
+}
+
+impl<A> Clone for TinyMap<A>
+where
+    A: MapArray,
+    A::Key: Clone,
+    A::Value: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            TinyMap::Stack(map) => TinyMap::Stack(map.clone()),
+            TinyMap::Heap(map) => TinyMap::Heap(map.clone()),
+        }
     }
 }
 
