@@ -1,7 +1,7 @@
 //! A map that starts on the stack but can automatically move to the heap
 
 use core::{borrow::Borrow, fmt, iter::FromIterator, mem::swap, ops::Index};
-use std::collections::BTreeMap;
+use std::collections::{btree_map, BTreeMap};
 
 use crate::{ArrayMap, MapArray};
 
@@ -403,6 +403,30 @@ where
             TinyMap::Heap(map) => map.remove(key),
         }
     }
+    /**
+    Gets the given key's corresponding entry in the map for in-place manipulation
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut count = TinyMap::<[Inner<(&str, i32)>; 10]>::new();
+
+    // count the number of occurrences of letters in the vec
+    for x in vec!["a","b","a","c","a","b"] {
+        *count.entry(x).or_insert(0) += 1;
+    }
+
+    assert_eq!(count["a"], 3);
+    ```
+    */
+    pub fn entry(&mut self, key: A::Key) -> Entry<'_, A> {
+        match self {
+            TinyMap::Stack(map) => Entry::Stack(map.entry(key)),
+            TinyMap::Heap(map) => Entry::Heap(map.entry(key)),
+        }
+    }
 }
 
 impl<A, Q> Index<&Q> for TinyMap<A>
@@ -537,7 +561,7 @@ pub enum IntoIter<K, V> {
     #[doc(hidden)]
     Stack(crate::array_map::IntoIter<K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::IntoIter<K, V>),
+    Heap(btree_map::IntoIter<K, V>),
 }
 
 impl<K, V> Iterator for IntoIter<K, V> {
@@ -555,7 +579,7 @@ pub enum Iter<'a, K, V> {
     #[doc(hidden)]
     Stack(crate::array_map::Iter<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::Iter<'a, K, V>),
+    Heap(btree_map::Iter<'a, K, V>),
 }
 
 impl<'a, K, V> Iterator for Iter<'a, K, V>
@@ -577,7 +601,7 @@ pub enum IterMut<'a, K, V> {
     #[doc(hidden)]
     Stack(crate::array_map::IterMut<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::IterMut<'a, K, V>),
+    Heap(btree_map::IterMut<'a, K, V>),
 }
 
 impl<'a, K, V> Iterator for IterMut<'a, K, V>
@@ -599,7 +623,7 @@ pub enum Keys<'a, K, V> {
     #[doc(hidden)]
     Stack(crate::array_map::Keys<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::Keys<'a, K, V>),
+    Heap(btree_map::Keys<'a, K, V>),
 }
 
 impl<'a, K, V> Iterator for Keys<'a, K, V>
@@ -620,7 +644,7 @@ pub enum Values<'a, K, V> {
     #[doc(hidden)]
     Stack(crate::array_map::Values<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::Values<'a, K, V>),
+    Heap(btree_map::Values<'a, K, V>),
 }
 
 impl<'a, K, V> Iterator for Values<'a, K, V>
@@ -641,7 +665,7 @@ pub enum ValuesMut<'a, K, V> {
     #[doc(hidden)]
     Stack(crate::array_map::ValuesMut<'a, K, V>),
     #[doc(hidden)]
-    Heap(std::collections::btree_map::ValuesMut<'a, K, V>),
+    Heap(btree_map::ValuesMut<'a, K, V>),
 }
 
 impl<'a, K, V> Iterator for ValuesMut<'a, K, V>
@@ -654,5 +678,153 @@ where
             ValuesMut::Stack(iter) => iter.next(),
             ValuesMut::Heap(iter) => iter.next(),
         }
+    }
+}
+
+/// A view into a single entry in a map, which may either be vacant or occupied.
+pub enum Entry<'a, A>
+where
+    A: MapArray,
+{
+    /// An entry into a map on the stack
+    Stack(crate::array_map::Entry<'a, A>),
+    /// An entry into a map on the heap
+    Heap(btree_map::Entry<'a, A::Key, A::Value>),
+}
+
+impl<'a, A> Entry<'a, A>
+where
+    A: MapArray,
+    A::Key: Ord,
+{
+    /**
+    Ensures a value is in the entry by inserting the default if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Panics
+
+    Panics if insertion would cause the map to excede its capacity.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = TinyMap::<[Inner<(&str, i32)>; 10]>::new();
+    map.entry("poneyland").or_insert(12);
+
+    assert_eq!(map["poneyland"], 12);
+    ```
+    */
+    pub fn or_insert(self, default: A::Value) -> &'a mut A::Value {
+        match self {
+            Entry::Stack(entry) => entry.or_insert(default),
+            Entry::Heap(entry) => entry.or_insert(default),
+        }
+    }
+    /**
+    Ensures a value is in the entry by inserting the result of the default function if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Panics
+
+    Panics if insertion would cause the map to excede its capacity.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = TinyMap::<[Inner<(&str, String)>; 10]>::new();
+    let s = "hoho";
+
+    map.entry("poneyland").or_insert_with(|| s.to_string());
+
+    assert_eq!(map["poneyland"], "hoho".to_string());
+    ```
+    */
+    pub fn or_insert_with<F>(self, default: F) -> &'a mut A::Value
+    where
+        F: FnOnce() -> A::Value,
+    {
+        match self {
+            Entry::Stack(entry) => entry.or_insert_with(default),
+            Entry::Heap(entry) => entry.or_insert_with(default),
+        }
+    }
+    /**
+    Returns a reference to this entry's key.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = TinyMap::<[Inner<(&str, usize)>; 10]>::new();
+    assert_eq!(map.entry("poneyland").key(), &"poneyland");
+    ```
+    */
+    pub fn key(&self) -> &A::Key {
+        match self {
+            Entry::Stack(entry) => entry.key(),
+            Entry::Heap(entry) => entry.key(),
+        }
+    }
+    /**
+    Provides in-place mutable access to an occupied entry before any potential inserts into the map.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = TinyMap::<[Inner<(&str, usize)>; 10]>::new();
+
+    map.entry("poneyland")
+        .and_modify(|e| { *e += 1 })
+        .or_insert(42);
+    assert_eq!(map["poneyland"], 42);
+
+    map.entry("poneyland")
+        .and_modify(|e| { *e += 1 })
+        .or_insert(42);
+    assert_eq!(map["poneyland"], 43);
+    ```
+    */
+    pub fn and_modify<F>(self, f: F) -> Entry<'a, A>
+    where
+        F: FnOnce(&mut A::Value),
+    {
+        match self {
+            Entry::Stack(entry) => Entry::Stack(entry.and_modify(f)),
+            Entry::Heap(entry) => Entry::Heap(entry.and_modify(f)),
+        }
+    }
+}
+
+impl<'a, A> Entry<'a, A>
+where
+    A: MapArray,
+    A::Key: Ord,
+    A::Value: Default,
+{
+    /**
+    Ensures a value is in the entry by inserting the default value if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = TinyMap::<[Inner<(&str, Option<usize>)>; 10]>::new();
+
+    map.entry("poneyland").or_default();
+
+    assert_eq!(map["poneyland"], None);
+    ```
+    */
+    pub fn or_default(self) -> &'a mut A::Value {
+        self.or_insert_with(Default::default)
     }
 }
