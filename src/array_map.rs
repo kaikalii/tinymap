@@ -666,6 +666,24 @@ where
     }
 }
 
+/// Elements from the iterator beyond the map's capacity will be discarded.
+impl<A> Extend<(A::Key, A::Value)> for ArrayMap<A>
+where
+    A: MapArray,
+    A::Key: Ord,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = (A::Key, A::Value)>,
+    {
+        for (k, v) in iter {
+            if self.try_insert(k, v).is_err() {
+                break;
+            }
+        }
+    }
+}
+
 impl<A> Drop for ArrayMap<A>
 where
     A: MapArray,

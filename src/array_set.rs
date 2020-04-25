@@ -439,6 +439,24 @@ where
     }
 }
 
+/// Elements from the iterator beyond the set's capacity will be discarded.
+impl<A> Extend<A::Item> for ArraySet<A>
+where
+    A: Array,
+    A::Item: Ord,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = A::Item>,
+    {
+        for item in iter {
+            if self.try_insert(item).is_err() {
+                break;
+            }
+        }
+    }
+}
+
 impl<A> Drop for ArraySet<A>
 where
     A: Array,

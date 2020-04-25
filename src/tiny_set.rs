@@ -368,6 +368,21 @@ where
     }
 }
 
+impl<A> Extend<A::Item> for TinySet<A>
+where
+    A: Array,
+    A::Item: Ord,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = A::Item>,
+    {
+        for item in iter {
+            self.insert(item);
+        }
+    }
+}
+
 /// An consuming iterator over the values in an ArraySet
 pub enum IntoIter<T> {
     #[doc(hidden)]

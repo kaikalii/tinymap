@@ -556,6 +556,21 @@ where
     }
 }
 
+impl<A> Extend<(A::Key, A::Value)> for TinyMap<A>
+where
+    A: MapArray,
+    A::Key: Ord,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = (A::Key, A::Value)>,
+    {
+        for (k, v) in iter {
+            self.insert(k, v);
+        }
+    }
+}
+
 /// An consuming iterator over the values in an ArraySet
 pub enum IntoIter<K, V> {
     #[doc(hidden)]
