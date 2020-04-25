@@ -51,7 +51,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = TinySet::<[Entry<i32>; 2]>::new();
+    let mut set = TinySet::<[Inner<i32>; 2]>::new();
     ```
     */
     pub fn new() -> Self {
@@ -64,7 +64,7 @@ where
     ```
     use tinymap::*;
 
-    let mut v = TinySet::<[Entry<i32>; 2]>::new();
+    let mut v = TinySet::<[Inner<i32>; 2]>::new();
     v.insert(1);
     v.clear();
     assert!(v.is_empty());
@@ -81,7 +81,7 @@ where
     ```
     use tinymap::*;
 
-    let mut v = TinySet::<[Entry<i32>; 2]>::new();
+    let mut v = TinySet::<[Inner<i32>; 2]>::new();
     assert_eq!(v.len(), 0);
     v.insert(1);
     assert_eq!(v.len(), 1);
@@ -101,7 +101,7 @@ where
     ```
     use tinymap::*;
 
-    let mut v = TinySet::<[Entry<i32>; 2]>::new();
+    let mut v = TinySet::<[Inner<i32>; 2]>::new();
     assert!(v.is_empty());
     v.insert(1);
     assert!(!v.is_empty());
@@ -118,7 +118,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinySet::<[Entry<i32>; 2]>::new();
+    let mut a = TinySet::<[Inner<i32>; 2]>::new();
     assert_eq!(2, a.capacity());
     ```
     */
@@ -133,7 +133,7 @@ where
     ```
     use tinymap::*;
 
-    let set: TinySet<[Entry<i32>; 3]> = [3, 1, 2].iter().copied().collect();
+    let set: TinySet<[Inner<i32>; 3]> = [3, 1, 2].iter().copied().collect();
     let mut set_iter = set.iter();
     assert_eq!(set_iter.next(), Some(&1));
     assert_eq!(set_iter.next(), Some(&2));
@@ -170,7 +170,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = TinySet::<[Entry<i32>; 2]>::new();
+    let mut set = TinySet::<[Inner<i32>; 2]>::new();
 
     assert_eq!(set.insert(2), true);
     assert_eq!(set.insert(2), false);
@@ -204,7 +204,7 @@ where
     ```
     use tinymap::*;
 
-    let set: TinySet<[Entry<_>; 3]> = [1, 2, 3].iter().copied().collect();
+    let set: TinySet<[Inner<_>; 3]> = [1, 2, 3].iter().copied().collect();
     assert_eq!(set.contains(&1), true);
     assert_eq!(set.contains(&4), false);
     ```
@@ -212,7 +212,7 @@ where
     pub fn contains<Q>(&self, value: &Q) -> bool
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinySet::Stack(set) => set.contains(value),
@@ -227,7 +227,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set: TinySet<[Entry<_>; 3]> = [1, 2, 3].iter().copied().collect();
+    let mut set: TinySet<[Inner<_>; 3]> = [1, 2, 3].iter().copied().collect();
     assert_eq!(set.get(&2), Some(&2));
     assert_eq!(set.get(&4), None);
     ```
@@ -235,7 +235,7 @@ where
     pub fn get<Q>(&self, value: &Q) -> Option<&A::Item>
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinySet::Stack(set) => set.get(value),
@@ -250,7 +250,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = TinySet::<[Entry<i32>; 2]>::new();
+    let mut set = TinySet::<[Inner<i32>; 2]>::new();
 
     set.insert(2);
     assert_eq!(set.remove(&2), true);
@@ -260,7 +260,7 @@ where
     pub fn remove<Q>(&mut self, value: &Q) -> bool
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinySet::Stack(set) => set.remove(value),

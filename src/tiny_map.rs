@@ -52,7 +52,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
 
     // entries can now be inserted into the empty map
     map.insert(1, "a");
@@ -68,7 +68,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     a.insert(1, "a");
     a.clear();
     assert!(a.is_empty());
@@ -85,7 +85,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     assert_eq!(a.len(), 0);
     a.insert(1, "a");
     assert_eq!(a.len(), 1);
@@ -105,7 +105,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     assert!(a.is_empty());
     a.insert(1, "a");
     assert!(!a.is_empty());
@@ -122,7 +122,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     assert_eq!(2, a.capacity());
     ```
     */
@@ -137,7 +137,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     map.insert(3, "c");
     map.insert(2, "b");
     map.insert(1, "a");
@@ -179,7 +179,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     assert_eq!(map.insert(37, "a"), None);
     assert_eq!(map.is_empty(), false);
 
@@ -215,7 +215,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     map.insert(1, "a");
     assert_eq!(map.get(&1), Some(&"a"));
     assert_eq!(map.get(&2), None);
@@ -224,7 +224,7 @@ where
     pub fn get<Q>(&self, key: &Q) -> Option<&A::Value>
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinyMap::Stack(map) => map.get(key),
@@ -239,7 +239,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     map.insert(1, "a");
     assert_eq!(map.contains_key(&1), true);
     assert_eq!(map.contains_key(&2), false);
@@ -248,7 +248,7 @@ where
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinyMap::Stack(map) => map.contains_key(key),
@@ -263,7 +263,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     map.insert(1, "a");
     if let Some(x) = map.get_mut(&1) {
         *x = "b";
@@ -274,7 +274,7 @@ where
     pub fn get_mut<'a, Q>(&'a mut self, key: &Q) -> Option<&'a mut A::Value>
     where
         A::Key: Borrow<Q> + 'a,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinyMap::Stack(map) => map.get_mut(key),
@@ -289,7 +289,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(&str, i32)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(&str, i32)>; 2]>::new();
     map.insert("a", 1);
     map.insert("b", 2);
     map.insert("c", 3);
@@ -316,7 +316,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     a.insert(2, "b");
     a.insert(1, "a");
 
@@ -338,7 +338,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     a.insert(1, "hello");
     a.insert(2, "goodbye");
 
@@ -360,7 +360,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = TinyMap::<[Entry<(i32, String)>; 2]>::new();
+    let mut a = TinyMap::<[Inner<(i32, String)>; 2]>::new();
     a.insert(1, String::from("hello"));
     a.insert(2, String::from("goodbye"));
 
@@ -387,7 +387,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = TinyMap::<[Entry<(i32, &str)>; 2]>::new();
+    let mut map = TinyMap::<[Inner<(i32, &str)>; 2]>::new();
     map.insert(1, "a");
     assert_eq!(map.remove(&1), Some("a"));
     assert_eq!(map.remove(&1), None);
@@ -396,7 +396,7 @@ where
     pub fn remove<Q>(&mut self, key: &Q) -> Option<A::Value>
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         match self {
             TinyMap::Stack(map) => map.remove(key),
@@ -409,7 +409,7 @@ impl<A, Q> Index<&Q> for TinyMap<A>
 where
     A: MapArray,
     A::Key: Ord + Borrow<Q>,
-    Q: Ord,
+    Q: Ord + ?Sized,
 {
     type Output = A::Value;
     fn index(&self, key: &Q) -> &Self::Output {

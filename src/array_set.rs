@@ -7,7 +7,7 @@ use core::{
     mem::{replace, swap, zeroed},
 };
 
-use crate::{Array, Entry};
+use crate::{Array, Inner};
 
 /**
 An array-backed, set-like data structure
@@ -44,7 +44,7 @@ where
         let mut array: A = unsafe { zeroed() };
         let len = self.len;
         for (i, item) in self.iter().enumerate() {
-            array.as_mut_slice()[i] = Entry::new(item.clone());
+            array.as_mut_slice()[i] = Inner::new(item.clone());
         }
         ArraySet { array, len }
     }
@@ -61,7 +61,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut set = ArraySet::<[Inner<i32>; 10]>::new();
     ```
     */
     pub fn new() -> Self {
@@ -74,7 +74,7 @@ where
     ```
     use tinymap::*;
 
-    let mut v = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut v = ArraySet::<[Inner<i32>; 10]>::new();
     v.insert(1);
     v.clear();
     assert!(v.is_empty());
@@ -91,7 +91,7 @@ where
     ```
     use tinymap::*;
 
-    let mut v = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut v = ArraySet::<[Inner<i32>; 10]>::new();
     assert_eq!(v.len(), 0);
     v.insert(1);
     assert_eq!(v.len(), 1);
@@ -108,7 +108,7 @@ where
     ```
     use tinymap::*;
 
-    let mut v = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut v = ArraySet::<[Inner<i32>; 10]>::new();
     assert!(v.is_empty());
     v.insert(1);
     assert!(!v.is_empty());
@@ -125,7 +125,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut a = ArraySet::<[Inner<i32>; 10]>::new();
     assert_eq!(10, a.capacity());
     ```
     */
@@ -140,7 +140,7 @@ where
     ```
     use tinymap::*;
 
-    let set: ArraySet<[Entry<i32>; 3]> = [3, 1, 2].iter().copied().collect();
+    let set: ArraySet<[Inner<i32>; 3]> = [3, 1, 2].iter().copied().collect();
     let mut set_iter = set.iter();
     assert_eq!(set_iter.next(), Some(&1));
     assert_eq!(set_iter.next(), Some(&2));
@@ -156,7 +156,7 @@ where
     fn find<Q>(&self, value: &Q) -> Result<usize, usize>
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         self.array.as_slice()[..self.len].binary_search_by_key(&value.borrow(), |value| {
             unsafe { value.as_ptr().as_ref() }.unwrap().borrow()
@@ -170,7 +170,7 @@ where
     ```
     use tinymap::*;
 
-    let set: ArraySet<[Entry<_>; 3]> = [1, 2, 3].iter().copied().collect();
+    let set: ArraySet<[Inner<_>; 3]> = [1, 2, 3].iter().copied().collect();
     assert_eq!(set.contains(&1), true);
     assert_eq!(set.contains(&4), false);
     ```
@@ -178,7 +178,7 @@ where
     pub fn contains<Q>(&self, value: &Q) -> bool
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         self.find(value).is_ok()
     }
@@ -190,7 +190,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set: ArraySet<[Entry<_>; 3]> = [1, 2, 3].iter().copied().collect();
+    let mut set: ArraySet<[Inner<_>; 3]> = [1, 2, 3].iter().copied().collect();
     assert_eq!(set.get(&2), Some(&2));
     assert_eq!(set.get(&4), None);
     ```
@@ -198,7 +198,7 @@ where
     pub fn get<Q>(&self, value: &Q) -> Option<&A::Item>
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         if let Ok(i) = self.find(value) {
             Some(&unsafe { self.array.as_slice()[i].as_ptr().as_ref() }.unwrap())
@@ -224,7 +224,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut set = ArraySet::<[Inner<i32>; 10]>::new();
     set.insert(1);
     set.insert(2);
     set.insert(3);
@@ -262,7 +262,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut set = ArraySet::<[Inner<i32>; 10]>::new();
 
     assert_eq!(set.insert(2), true);
     assert_eq!(set.insert(2), false);
@@ -290,7 +290,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = ArraySet::<[Entry<i32>; 3]>::new();
+    let mut set = ArraySet::<[Inner<i32>; 3]>::new();
     assert!(set.try_insert(37).is_ok());
     assert!(set.try_insert(2).is_ok());
     assert!(set.try_insert(16).is_ok());
@@ -308,7 +308,7 @@ where
                 for j in ((i + 1)..=self.len).rev() {
                     slice.swap(j - 1, j);
                 }
-                let mut value = Entry::new(value);
+                let mut value = Inner::new(value);
                 swap(&mut value, &mut slice[i]);
                 self.len += 1;
                 Ok(true)
@@ -323,7 +323,7 @@ where
     ```
     use tinymap::*;
 
-    let mut set = ArraySet::<[Entry<i32>; 10]>::new();
+    let mut set = ArraySet::<[Inner<i32>; 10]>::new();
 
     set.insert(2);
     assert_eq!(set.remove(&2), true);
@@ -333,11 +333,11 @@ where
     pub fn remove<Q>(&mut self, value: &Q) -> bool
     where
         A::Item: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         if let Ok(i) = self.find(value) {
             let slice = self.array.as_mut_slice();
-            let remove_value = replace(&mut slice[i], Entry::uninit());
+            let remove_value = replace(&mut slice[i], Inner::uninit());
             unsafe { remove_value.assume_init() };
             for j in (i + 1)..self.len {
                 slice.swap(j - 1, j);
@@ -455,7 +455,7 @@ where
 /// An consuming iterator over the values in an ArraySet
 #[cfg(feature = "alloc")]
 pub struct IntoIter<T> {
-    iter: std::vec::IntoIter<Entry<T>>,
+    iter: std::vec::IntoIter<Inner<T>>,
 }
 
 #[cfg(feature = "alloc")]
@@ -468,7 +468,7 @@ impl<T> Iterator for IntoIter<T> {
 
 /// An iterator over references to the values in an ArraySet
 pub struct Iter<'a, T> {
-    iter: core::slice::Iter<'a, Entry<T>>,
+    iter: core::slice::Iter<'a, Inner<T>>,
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {

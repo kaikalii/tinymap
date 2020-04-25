@@ -8,7 +8,7 @@ use core::{
     ops::Index,
 };
 
-use crate::{Entry, MapArray};
+use crate::{Inner, MapArray};
 
 /**
 An array-backed, map-like data structure
@@ -46,7 +46,7 @@ where
         let mut array: A = unsafe { zeroed() };
         let len = self.len;
         for (i, (k, v)) in self.iter().enumerate() {
-            array.as_mut_slice()[i] = Entry::new((k.clone(), v.clone()));
+            array.as_mut_slice()[i] = Inner::new((k.clone(), v.clone()));
         }
         ArrayMap { array, len }
     }
@@ -64,7 +64,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     assert_eq!(a.len(), 0);
     a.insert(1, "a");
     assert_eq!(a.len(), 1);
@@ -81,7 +81,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     assert!(a.is_empty());
     a.insert(1, "a");
     assert!(!a.is_empty());
@@ -97,7 +97,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
 
     // entries can now be inserted into the empty map
     map.insert(1, "a");
@@ -113,7 +113,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     a.insert(1, "a");
     a.clear();
     assert!(a.is_empty());
@@ -130,7 +130,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     assert_eq!(10, a.capacity());
     ```
     */
@@ -140,7 +140,7 @@ where
     fn find<Q>(&self, key: &Q) -> Result<usize, usize>
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         self.array.as_slice()[..self.len].binary_search_by_key(&key.borrow(), |entry| {
             unsafe { entry.as_ptr().as_ref() }.unwrap().0.borrow()
@@ -154,7 +154,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     assert_eq!(map.contains_key(&1), true);
     assert_eq!(map.contains_key(&2), false);
@@ -163,7 +163,7 @@ where
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         self.find(key).is_ok()
     }
@@ -175,7 +175,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     assert_eq!(map.get(&1), Some(&"a"));
     assert_eq!(map.get(&2), None);
@@ -184,7 +184,7 @@ where
     pub fn get<Q>(&self, key: &Q) -> Option<&A::Value>
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         if let Ok(i) = self.find(key) {
             Some(
@@ -204,7 +204,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     if let Some(x) = map.get_mut(&1) {
         *x = "b";
@@ -215,7 +215,7 @@ where
     pub fn get_mut<'a, Q>(&'a mut self, key: &Q) -> Option<&'a mut A::Value>
     where
         A::Key: Borrow<Q> + 'a,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         if let Ok(i) = self.find(key) {
             Some(
@@ -235,7 +235,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     map.insert(3, "c");
     map.insert(2, "b");
     map.insert(1, "a");
@@ -261,7 +261,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(&str, i32)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(&str, i32)>; 10]>::new();
     map.insert("a", 1);
     map.insert("b", 2);
     map.insert("c", 3);
@@ -287,7 +287,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     a.insert(2, "b");
     a.insert(1, "a");
 
@@ -308,7 +308,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     a.insert(1, "hello");
     a.insert(2, "goodbye");
 
@@ -329,7 +329,7 @@ where
     ```
     use tinymap::*;
 
-    let mut a = ArrayMap::<[Entry<(i32, String)>; 10]>::new();
+    let mut a = ArrayMap::<[Inner<(i32, String)>; 10]>::new();
     a.insert(1, String::from("hello"));
     a.insert(2, String::from("goodbye"));
 
@@ -365,7 +365,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(&str, i32)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(&str, i32)>; 10]>::new();
     map.insert("a", 1);
     map.insert("b", 2);
     map.insert("c", 3);
@@ -403,7 +403,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     assert_eq!(map.insert(37, "a"), None);
     assert_eq!(map.is_empty(), false);
 
@@ -433,7 +433,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 3]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 3]>::new();
     assert!(map.try_insert(37, "a").is_ok());
     assert!(map.try_insert(2, "b").is_ok());
     assert!(map.try_insert(16, "c").is_ok());
@@ -445,12 +445,25 @@ where
         key: A::Key,
         value: A::Value,
     ) -> Result<Option<A::Value>, (A::Key, A::Value)> {
+        self.try_insert_index(key, value, None)
+    }
+    fn try_insert_index(
+        &mut self,
+        key: A::Key,
+        value: A::Value,
+        index: Option<usize>,
+    ) -> Result<Option<A::Value>, (A::Key, A::Value)> {
         if self.len == A::CAPACITY {
             return Err((key, value));
         }
-        match self.find(&key) {
+        let i = if let Some(index) = index {
+            Err(index)
+        } else {
+            self.find(&key)
+        };
+        match i {
             Ok(i) => {
-                let mut entry = Entry::new((key, value));
+                let mut entry = Inner::new((key, value));
                 swap(&mut entry, &mut self.array.as_mut_slice()[i]);
                 Ok(Some(unsafe { entry.assume_init() }.1))
             }
@@ -459,7 +472,7 @@ where
                 for j in ((i + 1)..=self.len).rev() {
                     slice.swap(j - 1, j);
                 }
-                let mut entry = Entry::new((key, value));
+                let mut entry = Inner::new((key, value));
                 swap(&mut entry, &mut slice[i]);
                 self.len += 1;
                 Ok(None)
@@ -468,7 +481,7 @@ where
     }
     fn remove_index(&mut self, i: usize) -> (A::Key, A::Value) {
         let slice = self.array.as_mut_slice();
-        let mut entry = Entry::uninit();
+        let mut entry = Inner::uninit();
         swap(&mut entry, &mut slice[i]);
         for j in (i + 1)..self.len {
             slice.swap(j - 1, j);
@@ -484,7 +497,7 @@ where
     ```
     use tinymap::*;
 
-    let mut map = ArrayMap::<[Entry<(i32, &str)>; 10]>::new();
+    let mut map = ArrayMap::<[Inner<(i32, &str)>; 10]>::new();
     map.insert(1, "a");
     assert_eq!(map.remove(&1), Some("a"));
     assert_eq!(map.remove(&1), None);
@@ -493,12 +506,43 @@ where
     pub fn remove<Q>(&mut self, key: &Q) -> Option<A::Value>
     where
         A::Key: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         if let Ok(i) = self.find(key) {
             Some(self.remove_index(i).1)
         } else {
             None
+        }
+    }
+    /**
+    Gets the given key's corresponding entry in the map for in-place manipulation
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut count = ArrayMap::<[Inner<(&str, i32)>; 10]>::new();
+
+    // count the number of occurrences of letters in the vec
+    for x in vec!["a","b","a","c","a","b"] {
+        *count.entry(x).or_insert(0) += 1;
+    }
+
+    assert_eq!(count["a"], 3);
+    ```
+    */
+    pub fn entry(&mut self, key: A::Key) -> Entry<'_, A> {
+        match self.find(&key) {
+            Ok(i) => Entry::Occupied(OccupiedEntry {
+                map: self,
+                index: i,
+            }),
+            Err(i) => Entry::Vacant(VacantEntry {
+                map: self,
+                index: i,
+                key,
+            }),
         }
     }
 }
@@ -507,7 +551,7 @@ impl<A, Q> Index<&Q> for ArrayMap<A>
 where
     A: MapArray,
     A::Key: Borrow<Q>,
-    Q: Ord,
+    Q: Ord + ?Sized,
 {
     type Output = A::Value;
     fn index(&self, key: &Q) -> &Self::Output {
@@ -638,7 +682,7 @@ where
 /// An consuming iterator over the key-value pairs in an ArrayMap
 #[cfg(feature = "alloc")]
 pub struct IntoIter<K, V> {
-    iter: std::vec::IntoIter<Entry<(K, V)>>,
+    iter: std::vec::IntoIter<Inner<(K, V)>>,
 }
 
 #[cfg(feature = "alloc")]
@@ -651,7 +695,7 @@ impl<K, V> Iterator for IntoIter<K, V> {
 
 /// An iterator over references to the key-value pairs in an ArrayMap
 pub struct Iter<'a, K, V> {
-    iter: core::slice::Iter<'a, Entry<(K, V)>>,
+    iter: core::slice::Iter<'a, Inner<(K, V)>>,
 }
 
 impl<'a, K, V> Iterator for Iter<'a, K, V> {
@@ -666,7 +710,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
 /// An iterator over references to keys and mutable references to values in an ArrayMap
 pub struct IterMut<'a, K, V> {
-    iter: core::slice::IterMut<'a, Entry<(K, V)>>,
+    iter: core::slice::IterMut<'a, Inner<(K, V)>>,
 }
 
 impl<'a, K, V> Iterator for IterMut<'a, K, V>
@@ -685,7 +729,7 @@ where
 
 /// An iterator over references to the keys in an ArrayMap
 pub struct Keys<'a, K, V> {
-    iter: core::slice::Iter<'a, Entry<(K, V)>>,
+    iter: core::slice::Iter<'a, Inner<(K, V)>>,
 }
 
 impl<'a, K, V> Iterator for Keys<'a, K, V>
@@ -702,7 +746,7 @@ where
 
 /// An iterator over references to the values in an ArrayMap
 pub struct Values<'a, K, V> {
-    iter: core::slice::Iter<'a, Entry<(K, V)>>,
+    iter: core::slice::Iter<'a, Inner<(K, V)>>,
 }
 
 impl<'a, K, V> Iterator for Values<'a, K, V>
@@ -719,7 +763,7 @@ where
 
 /// An iterator over mutable references to the values in an ArrayMap
 pub struct ValuesMut<'a, K, V> {
-    iter: core::slice::IterMut<'a, Entry<(K, V)>>,
+    iter: core::slice::IterMut<'a, Inner<(K, V)>>,
 }
 
 impl<'a, K, V> Iterator for ValuesMut<'a, K, V>
@@ -734,6 +778,218 @@ where
     }
 }
 
+/// A view into a single entry in a map, which may either be vacant or occupied.
+pub enum Entry<'a, A>
+where
+    A: MapArray,
+{
+    /// A vacant entry.
+    Vacant(VacantEntry<'a, A>),
+    /// An occupied entry.
+    Occupied(OccupiedEntry<'a, A>),
+}
+
+impl<'a, A> Entry<'a, A>
+where
+    A: MapArray,
+    A::Key: Ord,
+{
+    /**
+    Ensures a value is in the entry by inserting the default if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Panics
+
+    Panics if insertion would cause the map to excede its capacity.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, i32)>; 10]>::new();
+    map.entry("poneyland").or_insert(12);
+
+    assert_eq!(map["poneyland"], 12);
+    ```
+    */
+    pub fn or_insert(self, default: A::Value) -> &'a mut A::Value {
+        match self {
+            Entry::Vacant(entry) => entry.insert(default),
+            Entry::Occupied(entry) => entry.into_mut(),
+        }
+    }
+    /**
+    Attempts to ensure a value is in the entry by inserting the default if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Errors
+
+    If insertion would cause the map to excede its capacity, this function returns an error containing
+    the key-value pair that could not be inserted.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, i32)>; 2]>::new();
+    assert!(map.entry("poneyland").or_try_insert(12).is_ok());
+
+    assert_eq!(map["poneyland"], 12);
+
+    assert!(map.entry("donkeyville").or_try_insert(20).is_ok());
+    assert!(map.entry("muledale").or_try_insert(7).is_err());
+    ```
+    */
+    pub fn or_try_insert(self, default: A::Value) -> Result<&'a mut A::Value, (A::Key, A::Value)> {
+        match self {
+            Entry::Vacant(entry) => entry.try_insert(default),
+            Entry::Occupied(entry) => Ok(entry.into_mut()),
+        }
+    }
+    /**
+    Ensures a value is in the entry by inserting the result of the default function if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Panics
+
+    Panics if insertion would cause the map to excede its capacity.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, String)>; 10]>::new();
+    let s = "hoho";
+
+    map.entry("poneyland").or_insert_with(|| s.to_string());
+
+    assert_eq!(map["poneyland"], "hoho".to_string());
+    ```
+    */
+    pub fn or_insert_with<F>(self, default: F) -> &'a mut A::Value
+    where
+        F: FnOnce() -> A::Value,
+    {
+        match self {
+            Entry::Vacant(entry) => entry.insert(default()),
+            Entry::Occupied(entry) => entry.into_mut(),
+        }
+    }
+    /**
+    Attempts to ensure a value is in the entry by inserting the result of the default function if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Errors
+
+    If insertion would cause the map to excede its capacity, this function returns an error containing
+    the key-value pair that could not be inserted.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, String)>; 2]>::new();
+    let s = "hoho";
+
+    assert!(map.entry("poneyland").or_try_insert_with(|| s.to_string()).is_ok());
+
+    assert_eq!(map["poneyland"], "hoho".to_string());
+
+    assert!(map.entry("donkeyville").or_try_insert_with(|| "wewe".to_string()).is_ok());
+
+    assert!(map.entry("muledale").or_try_insert_with(|| "bubu".to_string()).is_err());
+    ```
+    */
+    pub fn or_try_insert_with<F>(self, default: F) -> Result<&'a mut A::Value, (A::Key, A::Value)>
+    where
+        F: FnOnce() -> A::Value,
+    {
+        match self {
+            Entry::Vacant(entry) => entry.try_insert(default()),
+            Entry::Occupied(entry) => Ok(entry.into_mut()),
+        }
+    }
+    /**
+    Returns a reference to this entry's key.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, usize)>; 10]>::new();
+    assert_eq!(map.entry("poneyland").key(), &"poneyland");
+    ```
+    */
+    pub fn key(&self) -> &A::Key {
+        match self {
+            Entry::Vacant(entry) => entry.key(),
+            Entry::Occupied(entry) => entry.key(),
+        }
+    }
+    /**
+    Provides in-place mutable access to an occupied entry before any potential inserts into the map.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, usize)>; 10]>::new();
+
+    map.entry("poneyland")
+        .and_modify(|e| { *e += 1 })
+        .or_insert(42);
+    assert_eq!(map["poneyland"], 42);
+
+    map.entry("poneyland")
+        .and_modify(|e| { *e += 1 })
+        .or_insert(42);
+    assert_eq!(map["poneyland"], 43);
+    ```
+    */
+    pub fn and_modify<F>(mut self, f: F) -> Entry<'a, A>
+    where
+        F: FnOnce(&mut A::Value),
+    {
+        if let Entry::Occupied(entry) = &mut self {
+            f(entry.get_mut());
+        }
+        self
+    }
+}
+
+impl<'a, A> Entry<'a, A>
+where
+    A: MapArray,
+    A::Key: Ord,
+    A::Value: Default,
+{
+    /**
+    Ensures a value is in the entry by inserting the default value if empty,
+    and returns a mutable reference to the value in the entry.
+
+    # Example
+
+    ```
+    use tinymap::*;
+
+    let mut map = ArrayMap::<[Inner<(&str, Option<usize>)>; 10]>::new();
+
+    map.entry("poneyland").or_default();
+
+    assert_eq!(map["poneyland"], None);
+    ```
+    */
+    pub fn or_default(self) -> &'a mut A::Value {
+        self.or_insert_with(Default::default)
+    }
+}
+
 /// An entry in an ArrayMap that is vacant
 pub struct VacantEntry<'a, A>
 where
@@ -741,6 +997,7 @@ where
 {
     map: &'a mut ArrayMap<A>,
     index: usize,
+    key: A::Key,
 }
 
 impl<'a, A> VacantEntry<'a, A>
@@ -748,6 +1005,54 @@ where
     A: MapArray + 'a,
     A::Key: Ord,
 {
+    /**
+    Gets a reference to the key that would be used when inserting a value through the VacantEntry.
+    */
+    pub fn key(&self) -> &A::Key {
+        &self.key
+    }
+    /**
+    Take ownership of the key.
+    */
+    pub fn into_key(self) -> A::Key {
+        self.key
+    }
+    /**
+    Sets the value of the entry with the VacantEntry's key and returns a mutable reference to it.
+
+    # Panics
+
+    Panics if insertion would cause the map to excede its capacity.
+    */
+    pub fn insert(self, value: A::Value) -> &'a mut A::Value {
+        self.map
+            .try_insert_index(self.key, value, Some(self.index))
+            .unwrap_or_else(|_| panic!("Insertion would excede capacity"));
+        unsafe {
+            self.map.array.as_mut_slice()[self.index]
+                .as_mut_ptr()
+                .as_mut()
+        }
+        .map(|(_, v)| v)
+        .unwrap()
+    }
+    /**
+    Attempts to set the value of the entry with the VacantEntry's key and return a mutable reference to it.
+
+    # Errors
+
+    If insertion would cause the map to excede its capacity, this function returns an error containing
+    the key-value pair that could not be inserted.
+    */
+    pub fn try_insert(self, value: A::Value) -> Result<&'a mut A::Value, (A::Key, A::Value)> {
+        let index = self.index;
+        let map = self.map;
+        map.try_insert_index(self.key, value, Some(index)).map(|_| {
+            unsafe { map.array.as_mut_slice()[index].as_mut_ptr().as_mut() }
+                .map(|(_, v)| v)
+                .unwrap()
+        })
+    }
 }
 
 /// An entry in an ArrayMap that is occupied
@@ -764,39 +1069,53 @@ where
     A: MapArray + 'a,
     A::Key: Ord,
 {
-    fn entry(&self) -> &Entry<(A::Key, A::Value)> {
+    fn inner(&self) -> &Inner<(A::Key, A::Value)> {
         &self.map.array.as_slice()[self.index]
     }
-    fn entry_mut(&mut self) -> &mut Entry<(A::Key, A::Value)> {
+    fn inner_mut(&mut self) -> &mut Inner<(A::Key, A::Value)> {
         &mut self.map.array.as_mut_slice()[self.index]
     }
-    /// Gets a reference to the key in the entry
+    /**
+    Gets a reference to the key in the entry
+    */
     pub fn key(&self) -> &A::Key {
-        &unsafe { self.entry().as_ptr().as_ref() }.unwrap().0
+        &unsafe { self.inner().as_ptr().as_ref() }.unwrap().0
     }
-    /// Gets a reference to the value in the entry
+    /**
+    Gets a reference to the value in the entry
+    */
     pub fn get(&self) -> &A::Value {
-        &unsafe { self.entry().as_ptr().as_ref() }.unwrap().1
+        &unsafe { self.inner().as_ptr().as_ref() }.unwrap().1
     }
-    /// Gets a mutable reference to the value in the entry
+    /**
+    Gets a mutable reference to the value in the entry
+    */
     pub fn get_mut(&mut self) -> &mut A::Value {
-        &mut unsafe { self.entry_mut().as_mut_ptr().as_mut() }.unwrap().1
+        &mut unsafe { self.inner_mut().as_mut_ptr().as_mut() }.unwrap().1
     }
-    /// Sets the value of the entry and returns the entry's old value.
+    /**
+    Sets the value of the entry and returns the entry's old value.
+    */
     pub fn insert(&mut self, value: A::Value) -> A::Value {
         replace(self.get_mut(), value)
     }
-    /// Converts the entry into a mutable reference to its value.
+    /**
+    Converts the entry into a mutable reference to its value.
+    */
     pub fn into_mut(mut self) -> &'a mut A::Value {
-        unsafe { self.entry_mut().as_mut_ptr().as_mut() }
+        unsafe { self.inner_mut().as_mut_ptr().as_mut() }
             .map(|(_, v)| v)
             .unwrap()
     }
-    /// Takes the value of the entry out of the map, and returns it.
+    /**
+    Takes the value of the entry out of the map, and returns it.
+    */
     pub fn remove(self) -> A::Value {
         self.remove_entry().1
     }
-    /// Takes the key-value pair of the entry out of the map, and returns it.
+    /**
+    Takes the key-value pair of the entry out of the map, and returns it.
+    */
     pub fn remove_entry(self) -> (A::Key, A::Value) {
         self.map.remove_index(self.index)
     }
