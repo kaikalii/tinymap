@@ -16,7 +16,6 @@ An array-backed, map-like data structure
 ArrayMap wraps an array of key-value pairs and supports operation similar to a BTreeMap or HashMap.
 It has a fixed capacity, but it keeps track of how many pairs have been inserted and removed.
 */
-#[derive(Clone)]
 pub struct ArrayMap<A>
 where
     A: MapArray,
@@ -34,6 +33,22 @@ where
             array: unsafe { zeroed() },
             len: 0,
         }
+    }
+}
+
+impl<A> Clone for ArrayMap<A>
+where
+    A: MapArray,
+    A::Key: Clone,
+    A::Value: Clone,
+{
+    fn clone(&self) -> Self {
+        let mut array: A = unsafe { zeroed() };
+        let len = self.len;
+        for (i, (k, v)) in self.iter().enumerate() {
+            array.as_mut_slice()[i] = Entry::new((k.clone(), v.clone()));
+        }
+        ArrayMap { array, len }
     }
 }
 

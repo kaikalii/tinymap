@@ -15,7 +15,6 @@ An array-backed, set-like data structure
 ArraySet wraps an array of values and supports operation similar to a BTreeSet or HashSet.
 It has a fixed capacity, but it keeps track of how many values have been inserted and removed.
 */
-#[derive(Clone)]
 pub struct ArraySet<A>
 where
     A: Array,
@@ -33,6 +32,21 @@ where
             array: unsafe { zeroed() },
             len: 0,
         }
+    }
+}
+
+impl<A> Clone for ArraySet<A>
+where
+    A: Array,
+    A::Item: Clone,
+{
+    fn clone(&self) -> Self {
+        let mut array: A = unsafe { zeroed() };
+        let len = self.len;
+        for (i, item) in self.iter().enumerate() {
+            array.as_mut_slice()[i] = Entry::new(item.clone());
+        }
+        ArraySet { array, len }
     }
 }
 

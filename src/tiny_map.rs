@@ -8,6 +8,7 @@ use crate::{ArrayMap, MapArray};
 /**
 A map that starts on the stack but can automatically move to the heap
 */
+#[derive(Clone)]
 pub enum TinyMap<A>
 where
     A: MapArray,
