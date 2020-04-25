@@ -208,7 +208,7 @@ where
         }
     }
     /**
-    Returns a reference to the value corresponding to the value
+    Returns a reference to the value if it is present
 
     # Example
 
