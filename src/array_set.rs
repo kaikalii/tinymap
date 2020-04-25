@@ -148,7 +148,7 @@ where
     assert_eq!(set_iter.next(), None);
     ```
     */
-    pub fn iter(&self) -> Iter<'_, A> {
+    pub fn iter(&self) -> Iter<'_, A::Item> {
         Iter {
             iter: self.array.as_slice()[..self.len].iter(),
         }
@@ -400,7 +400,7 @@ where
     A: Array,
 {
     type Item = &'a A::Item;
-    type IntoIter = Iter<'a, A>;
+    type IntoIter = Iter<'a, A::Item>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -412,7 +412,7 @@ where
     A: Array,
 {
     type Item = A::Item;
-    type IntoIter = IntoIter<A>;
+    type IntoIter = IntoIter<A::Item>;
     fn into_iter(mut self) -> Self::IntoIter {
         let array = replace(&mut self.array, unsafe { zeroed() });
         IntoIter {
@@ -454,37 +454,25 @@ where
 
 /// An consuming iterator over the values in an ArraySet
 #[cfg(feature = "alloc")]
-pub struct IntoIter<A>
-where
-    A: Array,
-{
-    iter: std::vec::IntoIter<Entry<A::Item>>,
+pub struct IntoIter<T> {
+    iter: std::vec::IntoIter<Entry<T>>,
 }
 
 #[cfg(feature = "alloc")]
-impl<A> Iterator for IntoIter<A>
-where
-    A: Array,
-{
-    type Item = A::Item;
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|value| unsafe { value.assume_init() })
     }
 }
 
 /// An iterator over references to the values in an ArraySet
-pub struct Iter<'a, A>
-where
-    A: Array,
-{
-    iter: core::slice::Iter<'a, Entry<A::Item>>,
+pub struct Iter<'a, T> {
+    iter: core::slice::Iter<'a, Entry<T>>,
 }
 
-impl<'a, A> Iterator for Iter<'a, A>
-where
-    A: Array,
-{
-    type Item = &'a A::Item;
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()

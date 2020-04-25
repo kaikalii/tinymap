@@ -141,7 +141,7 @@ where
     assert_eq!(set_iter.next(), None);
     ```
     */
-    pub fn iter(&self) -> Iter<'_, A> {
+    pub fn iter(&self) -> Iter<'_, A::Item> {
         match self {
             TinySet::Stack(set) => Iter::Stack(set.iter()),
             TinySet::Heap(set) => Iter::Heap(set.iter()),
@@ -329,7 +329,7 @@ where
     A: Array,
 {
     type Item = &'a A::Item;
-    type IntoIter = Iter<'a, A>;
+    type IntoIter = Iter<'a, A::Item>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -341,7 +341,7 @@ where
     A: Array,
 {
     type Item = A::Item;
-    type IntoIter = IntoIter<A>;
+    type IntoIter = IntoIter<A::Item>;
     fn into_iter(self) -> Self::IntoIter {
         match self {
             TinySet::Stack(set) => IntoIter::Stack(set.into_iter()),
@@ -369,21 +369,15 @@ where
 }
 
 /// An consuming iterator over the values in an ArraySet
-pub enum IntoIter<A>
-where
-    A: Array,
-{
+pub enum IntoIter<T> {
     #[doc(hidden)]
-    Stack(crate::array_set::IntoIter<A>),
+    Stack(crate::array_set::IntoIter<T>),
     #[doc(hidden)]
-    Heap(std::collections::btree_set::IntoIter<A::Item>),
+    Heap(std::collections::btree_set::IntoIter<T>),
 }
 
-impl<A> Iterator for IntoIter<A>
-where
-    A: Array,
-{
-    type Item = A::Item;
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             IntoIter::Stack(iter) => iter.next(),
@@ -393,21 +387,15 @@ where
 }
 
 /// An iterator over references to the values in an TinySet
-pub enum Iter<'a, A>
-where
-    A: Array,
-{
+pub enum Iter<'a, T> {
     #[doc(hidden)]
-    Stack(crate::array_set::Iter<'a, A>),
+    Stack(crate::array_set::Iter<'a, T>),
     #[doc(hidden)]
-    Heap(std::collections::btree_set::Iter<'a, A::Item>),
+    Heap(std::collections::btree_set::Iter<'a, T>),
 }
 
-impl<'a, A> Iterator for Iter<'a, A>
-where
-    A: Array,
-{
-    type Item = &'a A::Item;
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Iter::Stack(iter) => iter.next(),
