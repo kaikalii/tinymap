@@ -2,6 +2,18 @@ use crate as tinymap;
 use tinymap::*;
 
 #[test]
+fn into_iter_empty() {
+    let map = tinymap!(usize => usize; 10);
+    for _ in map {
+        panic!("Iterating, but the map is empty")
+    }
+    let set = tinyset!(usize; 10);
+    for _ in set {
+        panic!("Iterating, but the set is empty")
+    }
+}
+
+#[test]
 fn drop_map() {
     use std::sync::{
         atomic::{AtomicU32, Ordering},

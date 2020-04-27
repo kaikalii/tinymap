@@ -642,8 +642,10 @@ where
     type IntoIter = IntoIter<A::Key, A::Value>;
     fn into_iter(mut self) -> Self::IntoIter {
         let array = core::mem::replace(&mut self.array, unsafe { zeroed() });
+        let mut vec = array.into_boxed_slice().into_vec();
+        vec.truncate(self.len);
         IntoIter {
-            iter: array.into_boxed_slice().into_vec().into_iter(),
+            iter: vec.into_iter(),
         }
     }
 }

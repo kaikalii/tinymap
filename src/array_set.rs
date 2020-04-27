@@ -415,8 +415,10 @@ where
     type IntoIter = IntoIter<A::Item>;
     fn into_iter(mut self) -> Self::IntoIter {
         let array = replace(&mut self.array, unsafe { zeroed() });
+        let mut vec = array.into_boxed_slice().into_vec();
+        vec.truncate(self.len());
         IntoIter {
-            iter: array.into_boxed_slice().into_vec().into_iter(),
+            iter: vec.into_iter(),
         }
     }
 }
