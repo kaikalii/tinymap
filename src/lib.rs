@@ -53,6 +53,19 @@ let map = arraymap!(i32 => &str; 10);
 
 Serde serialization and deserialization for the data structures in this crate can be enabled
 with the `serde` feature.
+
+# Performance
+
+You can run the benchmarks for yourself using `cargo bench`.
+
+In general, for small array sizes (~<50):
+
+- All `Array*::*` operations are faster than `std::collections::BTree*`
+- All `Tiny*::*` operations are faster than `std::collections::BTree*` until they grow beyond their arrays
+- All `Array*::insert` operations __are faster than `Hash*`__
+- Inserting the first element into an stack-based container is __an order of magnitude faster__ than inserting the first element into a heap-based one.
+    - This is especially useful if you are collecting a lot of things into lists in a loop
+
 */
 
 pub mod array_map;
