@@ -63,6 +63,43 @@ pub fn insert(c: &mut Criterion) {
     }
 }
 
+pub fn insert_1_item(c: &mut Criterion) {
+    let mut group = c.benchmark_group("set_insert_1_item");
+
+    group.bench_function("array_set_50", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut set = arrayset!(usize; 50);
+                set.insert(i);
+            }
+        })
+    });
+    group.bench_function("tiny_set_20", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut set = tinyset!(usize; 20);
+                set.insert(i);
+            }
+        })
+    });
+    group.bench_function("hash_set", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut set = HashSet::new();
+                set.insert(i);
+            }
+        })
+    });
+    group.bench_function("btree_set", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut set = BTreeSet::new();
+                set.insert(i);
+            }
+        })
+    });
+}
+
 pub fn get(c: &mut Criterion) {
     let mut group = c.benchmark_group("set_get");
 
@@ -213,5 +250,5 @@ pub fn remove(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, insert, get, remove);
+criterion_group!(benches, insert, insert_1_item, get, remove);
 criterion_main!(benches);

@@ -63,6 +63,43 @@ pub fn insert(c: &mut Criterion) {
     }
 }
 
+pub fn insert_1_item(c: &mut Criterion) {
+    let mut group = c.benchmark_group("map_insert_1_item");
+
+    group.bench_function("array_map_50", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut map = arraymap!(usize => usize; 50);
+                map.insert(i, i);
+            }
+        })
+    });
+    group.bench_function("tiny_map_20", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut map = tinymap!(usize => usize; 20);
+                map.insert(i, i);
+            }
+        })
+    });
+    group.bench_function("hash_map", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut map = HashMap::new();
+                map.insert(i, i);
+            }
+        })
+    });
+    group.bench_function("btree_map", |b| {
+        b.iter(|| {
+            for i in (0..100).map(|_| random_item()) {
+                let mut map = BTreeMap::new();
+                map.insert(i, i);
+            }
+        })
+    });
+}
+
 pub fn get(c: &mut Criterion) {
     let mut group = c.benchmark_group("map_get");
 
@@ -213,5 +250,5 @@ pub fn remove(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, insert, get, remove);
+criterion_group!(benches, insert, insert_1_item, get, remove);
 criterion_main!(benches);
